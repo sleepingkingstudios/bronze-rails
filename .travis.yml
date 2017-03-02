@@ -1,0 +1,14 @@
+# .travis.yml
+
+# Build Options
+language: ruby
+rvm:
+- 2.3.3
+before_script:
+- cp .rspec.example .rspec
+script:
+- bundle exec thor bronze:ci:default
+
+# Travis-CI Configuration
+cache: bundler
+sudo:  false # Enable containerized builds.
