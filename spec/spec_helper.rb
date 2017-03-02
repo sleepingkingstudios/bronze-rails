@@ -1,5 +1,11 @@
 # spec/spec_helper.rb
 
+unless ENV['CI']
+  require 'simplecov'
+
+  SimpleCov.start
+end # unless
+
 require 'rspec/sleeping_king_studios/all'
 require 'byebug'
 

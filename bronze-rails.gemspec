@@ -30,4 +30,5 @@ Gem::Specification.new do |gem|
     '~> 2.2', '>= 2.2.1'
   # See https://github.com/bbatsov/rubocop
   gem.add_development_dependency 'rubocop',   '~> 0.47.0'
+  gem.add_development_dependency 'simplecov', '~> 0.12'
 end # gemspec
