@@ -5,6 +5,7 @@ AllCops:
     - 'spec/**/*.rb'
   Exclude:
     - 'tmp/**/*'
+    - 'gemfiles/vendor/**/*'
     - 'vendor/**/*'
 
 Metrics/BlockLength:
