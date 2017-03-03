@@ -3,6 +3,7 @@
 require 'sleeping_king_studios/tools/toolbelt'
 
 require 'bronze/rails/resources'
+require 'bronze/rails/services/routes_service'
 
 module Bronze::Rails::Resources
   # Object representing a Rails resource. Provides methods to query properties
@@ -71,7 +72,21 @@ module Bronze::Rails::Resources
         tools.string.underscore(@resource_class.name.split('::').last)
     end # method resource_name
 
+    # @return [String] The relative path to the resource.
+    def resource_path resource_or_id
+      routes.send "#{resource_name}_path", resource_or_id
+    end # method resources_path
+
+    # @return [String] The relative path to the resource index.
+    def resources_path
+      routes.send "#{plural_resource_name}_path"
+    end # method resources_path
+
     private
+
+    def routes
+      Bronze::Rails::Services::RoutesService.instance
+    end # method routes
 
     def tools
       SleepingKingStudios::Tools::Toolbelt.instance

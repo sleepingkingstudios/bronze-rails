@@ -1,5 +1,7 @@
 # spec/bronze/rails/resources/resource_spec.rb
 
+require 'rails_helper'
+
 require 'bronze/rails/resources/resource'
 
 require 'fixtures/entities/archived_periodical'
@@ -99,5 +101,25 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     include_examples 'should have reader',
       :resource_options,
       ->() { resource_options }
+  end # describe
+
+  describe '#resource_path' do
+    let(:book) { Spec::Book.new }
+
+    it { expect(instance).to respond_to(:resource_path).with(1).arguments }
+
+    describe 'with a resource id' do
+      it { expect(instance.resource_path book.id).to be == "/books/#{book.id}" }
+    end # describe
+
+    describe 'with a resource instance' do
+      it { expect(instance.resource_path book).to be == "/books/#{book.id}" }
+    end # describe
+  end # describe
+
+  describe '#resources_path' do
+    it { expect(instance).to respond_to(:resources_path).with(0).arguments }
+
+    it { expect(instance.resources_path).to be == '/books' }
   end # describe
 end # describe
