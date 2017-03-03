@@ -16,3 +16,7 @@ Gemfile.lock
 /.byebug_history
 /spec/examples.txt
 /tmp
+
+# Ignore files copied to Rails test installs.
+/spec/rails_*/config/routes.rb
+!/spec/rails_shared/config/routes.rb

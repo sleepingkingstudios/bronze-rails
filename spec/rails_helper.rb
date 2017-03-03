@@ -11,12 +11,13 @@ unless match && match[:version] && !match[:version].empty?
   # :nocov:
 end # unless
 
-rails_path =
-  File.expand_path(
-    File.join 'spec', "rails_#{match[:version]}", 'config', 'environment'
-  ) # end rails_path
+rails_path = File.expand_path "rails_#{match[:version]}", __dir__
 
-require File.expand_path(rails_path, __FILE__)
+require 'support/copy_rails_files'
+
+Spec::FileCopier.new(rails_path).call
+
+require File.join(rails_path, 'config', 'environment')
 
 # Prevent database truncation if the environment is production
 if Rails.env.production?
