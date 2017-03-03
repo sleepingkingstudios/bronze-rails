@@ -30,6 +30,27 @@ module Bronze::Rails::Resources
       @collection_name ||= tools.string.pluralize(qualified_resource_name)
     end # method collection_name
 
+    # Returns the default path of the template for the edit action.
+    #
+    # @return [String] The template path.
+    def edit_template
+      template :edit
+    end # method edit_template
+
+    # Returns the default path of the template for the index action.
+    #
+    # @return [String] The template path.
+    def index_template
+      template :index
+    end # method index_template
+
+    # Returns the default path of the template for the new action.
+    #
+    # @return [String] The template path.
+    def new_template
+      template :new
+    end # method new_template
+
     # @see #plural_resource_name
     #
     # @return [Symbol] The plural resource name.
@@ -81,6 +102,22 @@ module Bronze::Rails::Resources
     def resources_path
       routes.send "#{plural_resource_name}_path"
     end # method resources_path
+
+    # Returns the default path of the template for the show action.
+    #
+    # @return [String] The template path.
+    def show_template
+      template :show
+    end # method show_template
+
+    # Returns the default path of the template for the given action.
+    #
+    # @param action [String, Symbol] The name of the action.
+    #
+    # @return [String] The template path.
+    def template action
+      "#{plural_resource_name}/#{action}"
+    end # method template
 
     private
 

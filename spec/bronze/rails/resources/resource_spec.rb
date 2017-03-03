@@ -34,6 +34,24 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     end # wrap_context
   end # describe
 
+  describe '#edit_template' do
+    include_examples 'should have reader',
+      :edit_template,
+      ->() { be == 'books/edit' }
+  end # describe
+
+  describe '#index_template' do
+    include_examples 'should have reader',
+      :index_template,
+      ->() { be == 'books/index' }
+  end # describe
+
+  describe '#new_template' do
+    include_examples 'should have reader',
+      :new_template,
+      ->() { be == 'books/new' }
+  end # describe
+
   describe '#plural_resource_key' do
     include_examples 'should have reader', :plural_resource_key, :books
 
@@ -121,5 +139,21 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     it { expect(instance).to respond_to(:resources_path).with(0).arguments }
 
     it { expect(instance.resources_path).to be == '/books' }
+  end # describe
+
+  describe '#show_template' do
+    include_examples 'should have reader',
+      :show_template,
+      ->() { be == 'books/show' }
+  end # describe
+
+  describe '#template' do
+    it { expect(instance).to respond_to(:template).with(1).argument }
+
+    describe 'with the name of an action' do
+      let(:action) { 'defenestrate' }
+
+      it { expect(instance.template action).to be == "books/#{action}" }
+    end # describe
   end # describe
 end # describe
