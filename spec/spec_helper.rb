@@ -1,9 +1,11 @@
 # spec/spec_helper.rb
 
 unless ENV['CI']
+  # :nocov:
   require 'simplecov'
 
   SimpleCov.start
+  # :nocov:
 end # unless
 
 require 'rspec/sleeping_king_studios/all'
