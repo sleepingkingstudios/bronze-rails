@@ -96,23 +96,17 @@ module Bronze::Rails::Resources
     end # method resource_name
 
     # @return [String] The relative path to the resource.
-    def resource_path resource_or_id
-      helper_name =
-        @namespaces.
-        reduce('') { |str, name| str << name << '_' } <<
-        resource_name << '_path'
+    def resource_path *ancestors, resource_or_id
+      helper_name = "#{path_prefix}#{resource_name}_path"
 
-      routes.send helper_name, resource_or_id
+      routes.send helper_name, *ancestors, resource_or_id
     end # method resources_path
 
     # @return [String] The relative path to the resource index.
-    def resources_path
-      helper_name =
-        @namespaces.
-        reduce('') { |str, name| str << name << '_' } <<
-        plural_resource_name << '_path'
+    def resources_path *ancestors
+      helper_name = "#{path_prefix}#{plural_resource_name}_path"
 
-      routes.send helper_name
+      routes.send helper_name, *ancestors
     end # method resources_path
 
     # Returns the default path of the template for the show action.
@@ -136,12 +130,26 @@ module Bronze::Rails::Resources
 
     private
 
+    def path_prefix
+      @path_prefix ||=
+        begin
+          @ancestor_names.
+            map { |name| tools.string.singularize(name) }.
+            reduce('') { |str, name| str << name << '_' }
+        end # prefix
+    end # method path_prefix
+
     def process_options
-      @namespaces = []
-      ancestors   = resource_options.fetch(:ancestors, [])
+      @namespaces     = []
+      @ancestor_names = []
+      ancestors       = resource_options.fetch(:ancestors, [])
 
       ancestors.each do |ancestor|
-        @namespaces << ancestor[:name].to_s if ancestor[:type] == :namespace
+        name = ancestor[:name].to_s
+
+        @ancestor_names << name
+
+        @namespaces << name if ancestor[:type] == :namespace
       end # each
     end # method process_options
 
