@@ -161,6 +161,16 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     end # wrap_context
   end # describe
 
+  describe '#primary_key' do
+    include_examples 'should have reader', :primary_key, :book_id
+
+    context 'when options[:primary_key] is set' do
+      let(:resource_options) { super().merge :primary_key => :tome_id }
+
+      it { expect(instance.primary_key).to be :tome_id }
+    end # context
+  end # describe
+
   describe '#qualified_resource_name' do
     include_examples 'should have reader',
       :qualified_resource_name,
