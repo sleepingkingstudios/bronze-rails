@@ -15,6 +15,8 @@ module Bronze::Rails::Resources
     def initialize resource_class, resource_options = {}
       @resource_class   = resource_class
       @resource_options = resource_options
+
+      process_options
     end # constructor
 
     # @return [Class] The base class representing instances of the resource.
@@ -95,12 +97,22 @@ module Bronze::Rails::Resources
 
     # @return [String] The relative path to the resource.
     def resource_path resource_or_id
-      routes.send "#{resource_name}_path", resource_or_id
+      helper_name =
+        @namespaces.
+        reduce('') { |str, name| str << name << '_' } <<
+        resource_name << '_path'
+
+      routes.send helper_name, resource_or_id
     end # method resources_path
 
     # @return [String] The relative path to the resource index.
     def resources_path
-      routes.send "#{plural_resource_name}_path"
+      helper_name =
+        @namespaces.
+        reduce('') { |str, name| str << name << '_' } <<
+        plural_resource_name << '_path'
+
+      routes.send helper_name
     end # method resources_path
 
     # Returns the default path of the template for the show action.
@@ -116,10 +128,22 @@ module Bronze::Rails::Resources
     #
     # @return [String] The template path.
     def template action
-      "#{plural_resource_name}/#{action}"
+      @namespaces.
+        reduce('') { |str, name| str << name << '/' } <<
+        plural_resource_name << '/' <<
+        action.to_s
     end # method template
 
     private
+
+    def process_options
+      @namespaces = []
+      ancestors   = resource_options.fetch(:ancestors, [])
+
+      ancestors.each do |ancestor|
+        @namespaces << ancestor[:name].to_s if ancestor[:type] == :namespace
+      end # each
+    end # method process_options
 
     def routes
       Bronze::Rails::Services::RoutesService.instance

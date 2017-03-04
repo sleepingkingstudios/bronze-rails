@@ -12,6 +12,38 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     let(:resource_class) { Spec::ArchivedPeriodical }
   end # shared_context
 
+  shared_context 'when the resource has a namespace' do
+    let(:ancestors) do
+      [
+        {
+          :name => :admin,
+          :type => :namespace
+        } # end admin
+      ] # end ancestors
+    end # let
+    let(:resource_options) do
+      super().merge :ancestors => ancestors
+    end # let
+  end # shared_context
+
+  shared_context 'when the resource has a compound namespace' do
+    let(:ancestors) do
+      [
+        {
+          :name => :admin,
+          :type => :namespace
+        }, # end admin
+        {
+          :name => :api,
+          :type => :namespace
+        } # end api
+      ] # end ancestors
+    end # let
+    let(:resource_options) do
+      super().merge :ancestors => ancestors
+    end # let
+  end # shared_context
+
   let(:resource_class)   { Spec::Book }
   let(:resource_options) { {} }
   let(:instance) do
@@ -133,12 +165,52 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     describe 'with a resource instance' do
       it { expect(instance.resource_path book).to be == "/books/#{book.id}" }
     end # describe
+
+    wrap_context 'when the resource has a namespace' do
+      describe 'with a resource id' do
+        it 'should return the relative path' do
+          expect(instance.resource_path book.id).
+            to be == "/admin/books/#{book.id}"
+        end # it
+      end # describe
+
+      describe 'with a resource instance' do
+        it 'should return the relative path' do
+          expect(instance.resource_path book.id).
+            to be == "/admin/books/#{book.id}"
+        end # it
+      end # describe
+    end # wrap_context
+
+    wrap_context 'when the resource has a compound namespace' do
+      describe 'with a resource id' do
+        it 'should return the relative path' do
+          expect(instance.resource_path book.id).
+            to be == "/admin/api/books/#{book.id}"
+        end # it
+      end # describe
+
+      describe 'with a resource instance' do
+        it 'should return the relative path' do
+          expect(instance.resource_path book.id).
+            to be == "/admin/api/books/#{book.id}"
+        end # it
+      end # describe
+    end # wrap_context
   end # describe
 
   describe '#resources_path' do
     it { expect(instance).to respond_to(:resources_path).with(0).arguments }
 
     it { expect(instance.resources_path).to be == '/books' }
+
+    wrap_context 'when the resource has a namespace' do
+      it { expect(instance.resources_path).to be == '/admin/books' }
+    end # wrap_context
+
+    wrap_context 'when the resource has a compound namespace' do
+      it { expect(instance.resources_path).to be == '/admin/api/books' }
+    end # wrap_context
   end # describe
 
   describe '#show_template' do
@@ -155,5 +227,24 @@ RSpec.describe Bronze::Rails::Resources::Resource do
 
       it { expect(instance.template action).to be == "books/#{action}" }
     end # describe
+
+    wrap_context 'when the resource has a namespace' do
+      describe 'with the name of an action' do
+        let(:action) { 'defenestrate' }
+
+        it { expect(instance.template action).to be == "admin/books/#{action}" }
+      end # describe
+    end # wrap_context
+
+    wrap_context 'when the resource has a compound namespace' do
+      describe 'with the name of an action' do
+        let(:action) { 'defenestrate' }
+
+        it 'should return the template path' do
+          expect(instance.template action).
+            to be == "admin/api/books/#{action}"
+        end # it
+      end # describe
+    end # wrap_context
   end # describe
 end # describe
