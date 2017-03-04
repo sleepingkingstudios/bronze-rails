@@ -50,8 +50,9 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     let(:ancestors) do
       [
         {
-          :name => :books,
-          :type => :resource
+          :name  => :books,
+          :type  => :resource,
+          :class => Spec::Book
         } # end books
       ] # end ancestors
     end # let
@@ -65,12 +66,14 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     let(:ancestors) do
       [
         {
-          :name => :books,
-          :type => :resource
+          :name  => :books,
+          :type  => :resource,
+          :class => Spec::Book
         }, # end books
         {
-          :name => :chapters,
-          :type => :resource
+          :name  => :chapters,
+          :type  => :resource,
+          :class => Spec::Chapter
         } # end chapters
       ] # end ancestors
     end # let
@@ -88,8 +91,9 @@ RSpec.describe Bronze::Rails::Resources::Resource do
           :type => :namespace
         }, # end admin
         {
-          :name => :books,
-          :type => :resource
+          :name  => :books,
+          :type  => :resource,
+          :class => Spec::Book
         } # end books
       ] # end ancestors
     end # let
@@ -180,6 +184,73 @@ RSpec.describe Bronze::Rails::Resources::Resource do
       it 'should return the qualified resource name' do
         expect(instance.qualified_resource_name).
           to be == 'spec-archived_periodical'
+      end # it
+    end # wrap_context
+  end # describe
+
+  describe '#parent_resources' do
+    include_examples 'should have reader', :parent_resources, {}
+
+    wrap_context 'when the resource has a parent resource' do
+      it 'should return the parent resource', :aggregate_failures do
+        expect(instance.parent_resources).to be_a Hash
+
+        parent = instance.parent_resources[:books]
+        expect(parent).to be_a described_class
+
+        expect(parent.resource_class).to be Spec::Book
+        expect(parent.resource_name).to be == 'book'
+        expect(parent.resources_path).to be == '/books'
+        expect(parent.index_template).to be == 'books/index'
+      end # it
+    end # wrap_context
+
+    wrap_context 'when the resource has a grandparent and parent resource' do
+      let(:book) { Spec::Book.new }
+
+      it 'should return the parent and grandparent resources',
+        :aggregate_failures \
+      do
+        expect(instance.parent_resources).to be_a Hash
+
+        grandparent = instance.parent_resources[:books]
+        expect(grandparent).to be_a described_class
+
+        expect(grandparent.resource_class).to be Spec::Book
+        expect(grandparent.resource_name).to be == 'book'
+        expect(grandparent.resources_path).to be == '/books'
+        expect(grandparent.index_template).to be == 'books/index'
+
+        parent = instance.parent_resources[:chapters]
+        expect(parent).to be_a described_class
+
+        expect(parent.resource_class).to be Spec::Chapter
+        expect(parent.resource_name).to be == 'chapter'
+        expect(parent.resources_path book).
+          to be == "/books/#{book.id}/chapters"
+        expect(parent.index_template).to be == 'chapters/index'
+
+        grandparent = parent.parent_resources[:books]
+        expect(grandparent).to be_a described_class
+
+        expect(grandparent.resource_class).to be Spec::Book
+        expect(grandparent.resource_name).to be == 'book'
+        expect(grandparent.resources_path).to be == '/books'
+        expect(grandparent.index_template).to be == 'books/index'
+      end # it
+    end # wrap_context
+
+    wrap_context 'when the resource has a namespace and a parent resource' do
+      it 'should return the parent resource', :aggregate_failures do
+        expect(instance.parent_resources).to be_a Hash
+
+        parent = instance.parent_resources[:books]
+        expect(parent).to be_a described_class
+
+        expect(parent.resource_class).to be Spec::Book
+        expect(parent.resource_name).to be == 'book'
+        expect(parent.resources_path).to be == '/admin/books'
+        expect(parent.index_template).to be == 'admin/books/index'
       end # it
     end # wrap_context
   end # describe

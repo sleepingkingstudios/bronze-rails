@@ -19,6 +19,9 @@ module Bronze::Rails::Resources
       process_options
     end # constructor
 
+    # @return [Hash<String, Resource>] The parent resource definitions.
+    attr_reader :parent_resources
+
     # @return [Class] The base class representing instances of the resource.
     attr_reader :resource_class
 
@@ -137,6 +140,20 @@ module Bronze::Rails::Resources
 
     private
 
+    def build_parent_resources ancestors
+      @parent_resources = {}
+
+      ancestors.each.with_index do |ancestor, index|
+        next unless ancestor[:type] == :resource
+
+        options = ancestor.dup.merge(:ancestors => ancestors[0...index])
+        klass   = options.delete(:class)
+        parent  = self.class.new(klass, options)
+
+        @parent_resources[parent.plural_resource_key] = parent
+      end # each
+    end # method build_parent_resources
+
     def path_prefix
       @path_prefix ||=
         begin
@@ -158,6 +175,8 @@ module Bronze::Rails::Resources
 
         @namespaces << name if ancestor[:type] == :namespace
       end # each
+
+      build_parent_resources ancestors
     end # method process_options
 
     def routes
