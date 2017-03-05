@@ -113,6 +113,18 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     it { expect(described_class).to be_constructible.with(1..2).arguments }
   end # describe
 
+  describe '#association_name' do
+    include_examples 'should have reader',
+      :association_name,
+      ->() { be == 'books' }
+
+    context 'when options[:association_name] is set' do
+      let(:resource_options) { super().merge :association_name => 'tomes' }
+
+      it { expect(instance.association_name).to be == 'tomes' }
+    end # context
+  end # describe
+
   describe '#collection_name' do
     include_examples 'should have reader',
       :collection_name,
@@ -129,6 +141,24 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     include_examples 'should have reader',
       :edit_template,
       ->() { be == 'books/edit' }
+  end # describe
+
+  describe '#foreign_key' do
+    include_examples 'should have reader',
+      :foreign_key,
+      ->() { be == :book_id }
+
+    context 'when options[:association_name] is set' do
+      let(:resource_options) { super().merge :association_name => 'tomes' }
+
+      it { expect(instance.foreign_key).to be == :tome_id }
+    end # context
+
+    context 'when options[:foreign_key] is set' do
+      let(:resource_options) { super().merge :foreign_key => :tome_id }
+
+      it { expect(instance.foreign_key).to be == :tome_id }
+    end # context
   end # describe
 
   describe '#index_template' do

@@ -5,6 +5,8 @@ require 'sleeping_king_studios/tools/toolbelt'
 require 'bronze/rails/resources'
 require 'bronze/rails/services/routes_service'
 
+# rubocop:disable Metrics/ClassLength
+
 module Bronze::Rails::Resources
   # Object representing a Rails resource. Provides methods to query properties
   # such as resourceful routes and template paths.
@@ -28,6 +30,13 @@ module Bronze::Rails::Resources
     # @return [Hash] Additional options for the resource.
     attr_reader :resource_options
 
+    # The name of the association from the root resource.
+    #
+    # @return [String] The association name.
+    def association_name
+      @resource_options.fetch :association_name, plural_resource_name
+    end # method association_name
+
     # The collection or table name used to persist the resource.
     #
     # @return [String] The collection name.
@@ -41,6 +50,14 @@ module Bronze::Rails::Resources
     def edit_template
       template :edit
     end # method edit_template
+
+    # The foreign key of the association from the root resource.
+    #
+    # @return [Symbol] The foreign key.
+    def foreign_key
+      @resource_options.fetch :foreign_key,
+        :"#{tools.string.singularize association_name.to_s}_id"
+    end # method foreign_keys
 
     # Returns the default path of the template for the index action.
     #
@@ -188,3 +205,5 @@ module Bronze::Rails::Resources
     end # method tools
   end # class
 end # module
+
+# rubocop:enable Metrics/ClassLength
