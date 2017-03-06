@@ -21,7 +21,7 @@ module Bronze::Rails::Resources
       process_options
     end # constructor
 
-    # @return [Hash<String, Resource>] The parent resource definitions.
+    # @return [Array<Resource>] The parent resource definitions.
     attr_reader :parent_resources
 
     # @return [Class] The base class representing instances of the resource.
@@ -30,11 +30,18 @@ module Bronze::Rails::Resources
     # @return [Hash] Additional options for the resource.
     attr_reader :resource_options
 
+    # @see #association_key
+    #
+    # @return [Symbol] The association name.
+    def association_key
+      association_name.intern
+    end # method association_key
+
     # The name of the association from the root resource.
     #
     # @return [String] The association name.
     def association_name
-      @resource_options.fetch :association_name, plural_resource_name
+      @resource_options.fetch(:association_name, plural_resource_name).to_s
     end # method association_name
 
     # The collection or table name used to persist the resource.
@@ -50,6 +57,19 @@ module Bronze::Rails::Resources
     def edit_template
       template :edit
     end # method edit_template
+
+    # Finds the parent resource with the given resource key or association key.
+    #
+    # @return [Resource] The requested resource, or nil if the resource is not
+    #   found.
+    def find_parent_resource resource_key
+      expected = resource_key.to_s
+
+      parent_resources.find do |parent|
+        parent.association_name == expected ||
+          parent.plural_resource_name == expected
+      end # find
+    end # method find_parent_resource
 
     # The foreign key of the association from the root resource.
     #
@@ -157,17 +177,31 @@ module Bronze::Rails::Resources
 
     private
 
+    def build_parent_resource ancestor, ancestors
+      if ancestor.key?(:resource_definition)
+        @parent_resources << ancestor[:resource_definition]
+
+        return ancestor[:resource_definition]
+      end # if
+
+      options = ancestor.dup.merge(:ancestors => ancestors)
+      klass   = options.delete(:class)
+      parent  = self.class.new(klass, options)
+
+      @parent_resources << parent
+
+      parent
+    end # method build_parent_resource
+
     def build_parent_resources ancestors
-      @parent_resources = {}
+      @parent_resources = []
 
       ancestors.each.with_index do |ancestor, index|
         next unless ancestor[:type] == :resource
 
-        options = ancestor.dup.merge(:ancestors => ancestors[0...index])
-        klass   = options.delete(:class)
-        parent  = self.class.new(klass, options)
+        parent = build_parent_resource ancestor, ancestors[0...index]
 
-        @parent_resources[parent.plural_resource_key] = parent
+        ancestor[:resource_definition] = parent
       end # each
     end # method build_parent_resources
 

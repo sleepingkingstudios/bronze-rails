@@ -113,6 +113,18 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     it { expect(described_class).to be_constructible.with(1..2).arguments }
   end # describe
 
+  describe '#association_key' do
+    include_examples 'should have reader',
+      :association_key,
+      ->() { be == :books }
+
+    context 'when options[:association_name] is set' do
+      let(:resource_options) { super().merge :association_name => 'tomes' }
+
+      it { expect(instance.association_key).to be == :tomes }
+    end # context
+  end # describe
+
   describe '#association_name' do
     include_examples 'should have reader',
       :association_name,
@@ -143,6 +155,59 @@ RSpec.describe Bronze::Rails::Resources::Resource do
       ->() { be == 'books/edit' }
   end # describe
 
+  describe '#find_parent_resource' do
+    it 'should define the method' do
+      expect(instance).to respond_to(:find_parent_resource).with(1).argument
+    end # it
+
+    it { expect(instance.find_parent_resource :books).to be nil }
+
+    wrap_context 'when the resource has a parent resource' do
+      let(:expected) { instance.parent_resources.first }
+
+      it 'should find the resource' do
+        expect(instance.find_parent_resource :books).to be expected
+      end # it
+
+      context 'when the parent has options[:association_name] set' do
+        let(:ancestors) do
+          super().tap do |ary|
+            ary.first[:association_name] = 'tome'
+          end # tap
+        end # let
+
+        it 'should find the resource' do
+          expect(instance.find_parent_resource :books).to be expected
+        end # it
+
+        it 'should find the resource' do
+          expect(instance.find_parent_resource :tome).to be expected
+        end # it
+      end # context
+    end # wrap_context
+
+    wrap_context 'when the resource has a grandparent and parent resource' do
+      let(:grandparent) { instance.parent_resources.first }
+      let(:parent)      { instance.parent_resources.last }
+
+      it 'should find the grandparent resource' do
+        expect(instance.find_parent_resource :books).to be grandparent
+      end # it
+
+      it 'should find the parent resource' do
+        expect(instance.find_parent_resource :chapters).to be parent
+      end # it
+    end # wrap_context
+
+    wrap_context 'when the resource has a namespace and a parent resource' do
+      let(:expected) { instance.parent_resources.first }
+
+      it 'should find the resource' do
+        expect(instance.find_parent_resource :books).to be expected
+      end # it
+    end # wrap_context
+  end # describe
+
   describe '#foreign_key' do
     include_examples 'should have reader',
       :foreign_key,
@@ -171,6 +236,69 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     include_examples 'should have reader',
       :new_template,
       ->() { be == 'books/new' }
+  end # describe
+
+  describe '#parent_resources' do
+    include_examples 'should have reader', :parent_resources, []
+
+    wrap_context 'when the resource has a parent resource' do
+      it 'should return the parent resource', :aggregate_failures do
+        expect(instance.parent_resources).to be_a Array
+        expect(instance.parent_resources.size).to be 1
+
+        parent = instance.parent_resources.first
+        expect(parent).to be_a described_class
+
+        expect(parent.resource_class).to be Spec::Book
+        expect(parent.resource_name).to be == 'book'
+        expect(parent.resources_path).to be == '/books'
+        expect(parent.index_template).to be == 'books/index'
+      end # it
+    end # wrap_context
+
+    wrap_context 'when the resource has a grandparent and parent resource' do
+      let(:book) { Spec::Book.new }
+
+      it 'should return the parent and grandparent resources',
+        :aggregate_failures \
+      do
+        expect(instance.parent_resources).to be_a Array
+        expect(instance.parent_resources.size).to be 2
+
+        grandparent = instance.parent_resources.first
+        expect(grandparent).to be_a described_class
+
+        expect(grandparent.resource_class).to be Spec::Book
+        expect(grandparent.resource_name).to be == 'book'
+        expect(grandparent.resources_path).to be == '/books'
+        expect(grandparent.index_template).to be == 'books/index'
+
+        parent = instance.parent_resources.last
+        expect(parent).to be_a described_class
+
+        expect(parent.resource_class).to be Spec::Chapter
+        expect(parent.resource_name).to be == 'chapter'
+        expect(parent.resources_path book).
+          to be == "/books/#{book.id}/chapters"
+        expect(parent.index_template).to be == 'chapters/index'
+        expect(parent.parent_resources).to be == [grandparent]
+      end # it
+    end # wrap_context
+
+    wrap_context 'when the resource has a namespace and a parent resource' do
+      it 'should return the parent resource', :aggregate_failures do
+        expect(instance.parent_resources).to be_a Array
+        expect(instance.parent_resources.size).to be 1
+
+        parent = instance.parent_resources.first
+        expect(parent).to be_a described_class
+
+        expect(parent.resource_class).to be Spec::Book
+        expect(parent.resource_name).to be == 'book'
+        expect(parent.resources_path).to be == '/admin/books'
+        expect(parent.index_template).to be == 'admin/books/index'
+      end # it
+    end # wrap_context
   end # describe
 
   describe '#plural_resource_key' do
@@ -214,73 +342,6 @@ RSpec.describe Bronze::Rails::Resources::Resource do
       it 'should return the qualified resource name' do
         expect(instance.qualified_resource_name).
           to be == 'spec-archived_periodical'
-      end # it
-    end # wrap_context
-  end # describe
-
-  describe '#parent_resources' do
-    include_examples 'should have reader', :parent_resources, {}
-
-    wrap_context 'when the resource has a parent resource' do
-      it 'should return the parent resource', :aggregate_failures do
-        expect(instance.parent_resources).to be_a Hash
-
-        parent = instance.parent_resources[:books]
-        expect(parent).to be_a described_class
-
-        expect(parent.resource_class).to be Spec::Book
-        expect(parent.resource_name).to be == 'book'
-        expect(parent.resources_path).to be == '/books'
-        expect(parent.index_template).to be == 'books/index'
-      end # it
-    end # wrap_context
-
-    wrap_context 'when the resource has a grandparent and parent resource' do
-      let(:book) { Spec::Book.new }
-
-      it 'should return the parent and grandparent resources',
-        :aggregate_failures \
-      do
-        expect(instance.parent_resources).to be_a Hash
-
-        grandparent = instance.parent_resources[:books]
-        expect(grandparent).to be_a described_class
-
-        expect(grandparent.resource_class).to be Spec::Book
-        expect(grandparent.resource_name).to be == 'book'
-        expect(grandparent.resources_path).to be == '/books'
-        expect(grandparent.index_template).to be == 'books/index'
-
-        parent = instance.parent_resources[:chapters]
-        expect(parent).to be_a described_class
-
-        expect(parent.resource_class).to be Spec::Chapter
-        expect(parent.resource_name).to be == 'chapter'
-        expect(parent.resources_path book).
-          to be == "/books/#{book.id}/chapters"
-        expect(parent.index_template).to be == 'chapters/index'
-
-        grandparent = parent.parent_resources[:books]
-        expect(grandparent).to be_a described_class
-
-        expect(grandparent.resource_class).to be Spec::Book
-        expect(grandparent.resource_name).to be == 'book'
-        expect(grandparent.resources_path).to be == '/books'
-        expect(grandparent.index_template).to be == 'books/index'
-      end # it
-    end # wrap_context
-
-    wrap_context 'when the resource has a namespace and a parent resource' do
-      it 'should return the parent resource', :aggregate_failures do
-        expect(instance.parent_resources).to be_a Hash
-
-        parent = instance.parent_resources[:books]
-        expect(parent).to be_a described_class
-
-        expect(parent.resource_class).to be Spec::Book
-        expect(parent.resource_name).to be == 'book'
-        expect(parent.resources_path).to be == '/admin/books'
-        expect(parent.index_template).to be == 'admin/books/index'
       end # it
     end # wrap_context
   end # describe
