@@ -1,11 +1,13 @@
-# spec/fixtures/entities/section.rb
+# spec/fixtures/entities/archived_periodical.rb
 
 require 'bronze/entities/entity'
 
 require 'bronze/rails/entity'
 
 module Spec
-  class Section < Bronze::Entities::Entity
+  class ArchivedPeriodical < Bronze::Entities::Entity
     include Bronze::Rails::Entity
+
+    attribute :title, String
   end # class
 end # module
