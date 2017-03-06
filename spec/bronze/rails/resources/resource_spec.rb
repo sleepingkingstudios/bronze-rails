@@ -537,6 +537,42 @@ RSpec.describe Bronze::Rails::Resources::Resource do
       ->() { be == 'books/show' }
   end # describe
 
+  describe '#singular_association_key' do
+    include_examples 'should have reader',
+      :singular_association_key,
+      ->() { be == :book }
+
+    it 'should alias the method' do
+      expect(instance).
+        to alias_method(:singular_association_key).
+        as(:parent_key)
+    end # it
+
+    context 'when options[:association_name] is set' do
+      let(:resource_options) { super().merge :association_name => 'tomes' }
+
+      it { expect(instance.singular_association_key).to be == :tome }
+    end # context
+  end # describe
+
+  describe '#singular_association_name' do
+    include_examples 'should have reader',
+      :singular_association_name,
+      ->() { be == 'book' }
+
+    it 'should alias the method' do
+      expect(instance).
+        to alias_method(:singular_association_name).
+        as(:parent_name)
+    end # it
+
+    context 'when options[:association_name] is set' do
+      let(:resource_options) { super().merge :association_name => 'tomes' }
+
+      it { expect(instance.singular_association_name).to be == 'tome' }
+    end # context
+  end # describe
+
   describe '#template' do
     it { expect(instance).to respond_to(:template).with(1).argument }
 

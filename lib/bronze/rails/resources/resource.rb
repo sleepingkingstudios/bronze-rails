@@ -163,6 +163,23 @@ module Bronze::Rails::Resources
       template :show
     end # method show_template
 
+    # @see #singular_association_name
+    #
+    # @return [Symbol] The association name.
+    def singular_association_key
+      singular_association_name.intern
+    end # method singular_association_key
+    alias_method :parent_key, :singular_association_key
+
+    # Returns the singular form of the association name, such as when referring
+    # to the instance of a parent resource.
+    #
+    # @return [String] The association name.
+    def singular_association_name
+      tools.string.singularize(association_name)
+    end # method singular_association_name
+    alias_method :parent_name, :singular_association_name
+
     # Returns the default path of the template for the given action.
     #
     # @param action [String, Symbol] The name of the action.
