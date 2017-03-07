@@ -43,12 +43,12 @@ module Bronze::Rails::Resources
       :to        => :resource_definition,
       :allow_nil => true
 
-    # GET /resources
+    # GET /path/to/resources
     def index
       responder.call(build_response index_resources)
     end # method index
 
-    # GET /resources/new
+    # GET /path/to/resources/new
     def new
       responder.call(build_response new_resource)
     end # method new

@@ -2,13 +2,12 @@
 
 require 'rails_helper'
 
-require 'bronze/operations/null_operation'
-
 require 'bronze/rails/resources/resources_controller'
 
 require 'fixtures/entities/book'
 require 'fixtures/entities/chapter'
 require 'support/mocks/controller'
+require 'support/mocks/operation'
 
 RSpec.describe Bronze::Rails::Resources::ResourcesController do
   shared_context 'when the resource is defined' do
@@ -24,6 +23,31 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         ->() { %w(title series) }
     end # before example
   end # shared_context
+
+  shared_examples 'should delegate to the operation' do |action_name|
+    operation_name = :"#{action_name}_resource"
+
+    let(:operation) { Spec::Operation.new }
+    let(:response)  { double('response') }
+
+    it "should delegate to the ##{operation_name} operation" do
+      expect(instance).
+        to receive(operation_name).
+        with(no_args).
+        and_return(operation)
+
+      expect(instance).
+        to receive(:build_response).
+        with(operation).
+        and_return(response)
+
+      expect(instance.send :responder).
+        to receive(:call).
+        with(response)
+
+      instance.send(action_name)
+    end # it
+  end # shared_examples
 
   let(:resource_class)   { Spec::Book }
   let(:resource_options) { {} }
@@ -91,30 +115,57 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
   end # describe
 
-  describe '#new' do
+  describe '#index_resources' do
     include_context 'when the resource is defined'
 
     let(:operation) { Bronze::Operations::NullOperation.new }
-    let(:response)  { double('response') }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:index_resources)
+
+      expect(instance).
+        to respond_to(:index_resources, true).
+        with(0).arguments
+    end # it
+
+    it 'should find the matching resources' do
+      expect(instance).
+        to receive(:find_matching_resources).
+        with(resource_class, instance.send(:filter_params)).
+        and_return(operation)
+
+      expect(instance.send :index_resources).to be operation
+    end # it
+  end # describe
+
+  describe '#new' do
+    include_context 'when the resource is defined'
 
     it { expect(instance).to respond_to(:new).with(0).arguments }
 
-    it 'should delegate to the operation' do
+    include_examples 'should delegate to the operation', :new
+  end # describe
+
+  describe '#new_resource' do
+    include_context 'when the resource is defined'
+
+    let(:operation) { Spec::Operation }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:new_resource)
+
+      expect(instance).
+        to respond_to(:new_resource, true).
+        with(0).arguments
+    end # it
+
+    it 'should build the resource' do
       expect(instance).
         to receive(:build_resource).
         with(resource_class, instance.send(:resource_params)).
         and_return(operation)
 
-      expect(instance).
-        to receive(:build_response).
-        with(operation).
-        and_return(response)
-
-      expect(instance.send :responder).
-        to receive(:call).
-        with(response)
-
-      instance.new
+      expect(instance.send :new_resource).to be operation
     end # it
   end # describe
 
