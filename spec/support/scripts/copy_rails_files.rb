@@ -1,4 +1,4 @@
-# spec/support/copy_rails_files.rb
+# spec/support/scripts/copy_rails_files.rb
 
 require 'fileutils'
 
@@ -36,7 +36,10 @@ module Spec
     end # method copy_files
 
     def file_patterns
-      ['config/routes.rb']
+      [
+        'config/routes.rb',
+        'app/controllers/**/*.rb'
+      ] # end patterns
     end # method file_patterns
 
     def shared_path

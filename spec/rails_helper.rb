@@ -13,7 +13,7 @@ end # unless
 
 rails_path = File.expand_path "rails_#{match[:version]}", __dir__
 
-require 'support/copy_rails_files'
+require 'support/scripts/copy_rails_files'
 
 Spec::FileCopier.new(rails_path).call
 
