@@ -98,4 +98,34 @@ RSpec.describe BooksController, :type => :controller do
       end # describe
     end # wrap_context
   end # describe
+
+  describe '#new' do
+    let(:attributes) { {} }
+    let(:params)     { super().merge :book => attributes }
+    let(:expected) do
+      hsh = {}
+
+      Spec::Book.attributes.keys.each do |attr_name|
+        next if attr_name == :id
+
+        hsh[attr_name] = attributes[attr_name]
+      end # each
+
+      hsh
+    end # let
+
+    def perform_action
+      get :new, :headers => headers, :params => params
+    end # method perform_action
+
+    include_examples 'should render template',
+      'books/new',
+      lambda { |options|
+        book = options[:locals][:book]
+        book_attributes = book.attributes.tap { |hsh| hsh.delete :id }
+
+        expect(book).to be_a Spec::Book
+        expect(book_attributes).to be == expected
+      } # end include_examples
+  end # describe
 end # describe

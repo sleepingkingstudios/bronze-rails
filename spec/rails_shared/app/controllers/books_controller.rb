@@ -8,4 +8,10 @@ class BooksController < ApplicationController
   include Bronze::Rails::Resources::ResourcesController
 
   resource Spec::Book
+
+  private
+
+  def permitted_attributes
+    %w(title series page_count)
+  end # method permitted_attributes
 end # class

@@ -17,6 +17,14 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # before example
   end # shared_context
 
+  shared_context 'when a subset of attributes are permitted' do
+    before(:example) do
+      described_class.send :define_method,
+        :permitted_attributes,
+        ->() { %w(title series) }
+    end # before example
+  end # shared_context
+
   let(:resource_class)   { Spec::Book }
   let(:resource_options) { {} }
   let(:described_class) do
@@ -83,12 +91,60 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
   end # describe
 
+  describe '#new' do
+    include_context 'when the resource is defined'
+
+    let(:operation) { Bronze::Operations::NullOperation.new }
+    let(:response)  { double('response') }
+
+    it { expect(instance).to respond_to(:new).with(0).arguments }
+
+    it 'should delegate to the operation' do
+      expect(instance).
+        to receive(:build_resource).
+        with(resource_class, instance.send(:resource_params)).
+        and_return(operation)
+
+      expect(instance).
+        to receive(:build_response).
+        with(operation).
+        and_return(response)
+
+      expect(instance.send :responder).
+        to receive(:call).
+        with(response)
+
+      instance.new
+    end # it
+  end # describe
+
   ##############################################################################
   ###                               Operations                               ###
   ##############################################################################
 
+  describe '#build_resource' do
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:build_resource)
+
+      expect(instance).
+        to respond_to(:build_resource, true).
+        with(2).arguments
+    end # it
+
+    it 'should return an operation' do
+      operation = instance.send :build_resource, resource_class, {}
+
+      expect(operation).
+        to be_a Patina::Operations::Entities::BuildOneOperation
+      expect(operation.resource_class).to be resource_class
+      expect(operation.called?).to be true
+    end # it
+  end # describe
+
   describe '#find_matching_resources' do
-    it 'should define the method' do
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:find_matching_resources)
+
       expect(instance).
         to respond_to(:find_matching_resources, true).
         with(2).arguments
@@ -153,6 +209,18 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # describe
   end # describe
 
+  describe '#permitted_attributes' do
+    it 'should define the private reader' do
+      expect(instance).not_to respond_to(:permitted_attributes)
+
+      expect(instance).
+        to respond_to(:permitted_attributes, true).
+        with(0).arguments
+    end # it
+
+    it { expect(instance.send :permitted_attributes).to be == [] }
+  end # describe
+
   describe '#resource_class' do
     include_examples 'should have reader', :resource_class, nil
 
@@ -175,6 +243,48 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         expect(definition.resource_options).to be == resource_options
       end # it
     end # wrap_context
+  end # describe
+
+  describe '#resource_params' do
+    include_context 'when the resource is defined'
+
+    it 'should define the private reader' do
+      expect(instance).not_to respond_to(:resource_params)
+
+      expect(instance).to respond_to(:resource_params, true).with(0).arguments
+    end # it
+
+    it { expect(instance.send :resource_params).to be == {} }
+
+    context 'when the resource params are empty' do
+      let(:params) { super().merge :book => {} }
+
+      it { expect(instance.send :resource_params).to be == {} }
+    end # context
+
+    context 'when the resource params have attributes' do
+      let(:attributes) do
+        {
+          :title      => 'The Hobbit',
+          :series     => 'The Lord of the Rings',
+          :page_count => 320
+        } # end attributes
+      end # let
+      let(:params) { super().merge :book => attributes }
+
+      it { expect(instance.send :resource_params).to be == {} }
+
+      wrap_context 'when a subset of attributes are permitted' do
+        let(:expected) do
+          {
+            'title'  => attributes[:title],
+            'series' => attributes[:series]
+          } # end expected attributes
+        end # let
+
+        it { expect(instance.send :resource_params).to be == expected }
+      end # wrap_context
+    end # context
   end # describe
 
   describe '#responder' do

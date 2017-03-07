@@ -37,17 +37,45 @@ module Bronze::Rails::Resources
 
     delegate :resource_definition, :to => :class
 
-    delegate :resource_class, :to => :resource_definition, :allow_nil => true
+    delegate \
+      :resource_class,
+      :resource_name,
+      :to        => :resource_definition,
+      :allow_nil => true
 
+    # GET /resources
     def index
       responder.call(build_response index_resources)
     end # method index
 
+    # GET /resources/new
+    def new
+      responder.call(build_response new_resource)
+    end # method new
+
     private
+
+    ############################################################################
+    ###                               Actions                                ###
+    ############################################################################
+
+    def index_resources
+      find_matching_resources resource_class, filter_params
+    end # method index_resources
+
+    def new_resource
+      build_resource resource_class, resource_params
+    end # method new_resource
 
     ############################################################################
     ###                             Operations                               ###
     ############################################################################
+
+    def build_resource resource_class, resource_params
+      Patina::Operations::Entities::BuildOneOperation.new(
+        resource_class
+      ).execute(resource_params)
+    end # method build_resource
 
     def find_matching_resources resource_class, filter_params
       Patina::Operations::Entities::FindMatchingOperation.new(
@@ -55,10 +83,6 @@ module Bronze::Rails::Resources
         resource_class
       ).execute(filter_params)
     end # method find_matching_resources
-
-    def index_resources
-      find_matching_resources resource_class, filter_params
-    end # method index_resources
 
     ############################################################################
     ###                               Helpers                                ###
@@ -80,6 +104,17 @@ module Bronze::Rails::Resources
         end. # tap
         to_h
     end # method filter_params
+
+    def permitted_attributes
+      []
+    end # method permitted_attributes
+
+    def resource_params
+      params.
+        permit(resource_name => permitted_attributes).
+        fetch(resource_name, {}).
+        to_h
+    end # method resource_params
 
     def responder
       @responder ||= Bronze::Rails::Responders::RenderViewResponder.new(self)
