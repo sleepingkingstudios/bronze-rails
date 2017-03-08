@@ -10,13 +10,13 @@ module Spec
       @repository  = repository
     end # constructor
 
+    def redirect_to _; end
+
+    def render; end
+
     private
 
     attr_reader :action_name, :params
-
-    def redirect_to; end
-
-    def render; end
 
     def repository
       @repository ||= Patina::Collections::Simple::Repository.new

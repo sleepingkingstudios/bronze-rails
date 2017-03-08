@@ -17,6 +17,8 @@ module Spec
 
       @errors          = errors
       @failure_message = failure_message
+
+      self
     end # fail!
 
     def resource

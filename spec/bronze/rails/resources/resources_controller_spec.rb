@@ -119,6 +119,14 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     include_examples 'should delegate to the operation', :new
   end # describe
 
+  describe '#show' do
+    include_context 'when the resource is defined'
+
+    it { expect(instance).to respond_to(:show).with(0).arguments }
+
+    include_examples 'should delegate to the operation', :show
+  end # describe
+
   ##############################################################################
   ###                                 Actions                                ###
   ##############################################################################
@@ -191,7 +199,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
   describe '#new_resource' do
     include_context 'when the resource is defined'
 
-    let(:operation) { Spec::Operation }
+    let(:operation) { Spec::Operation.new }
 
     it 'should define the private method' do
       expect(instance).not_to respond_to(:new_resource)
@@ -208,6 +216,34 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         and_return(operation)
 
       expect(instance.send :new_resource).to be operation
+    end # it
+  end # describe
+
+  describe '#show_resource' do
+    include_context 'when the resource is defined'
+
+    let(:resource)  { Spec::Book.new }
+    let(:operation) { Spec::Operation.new(:resources => [resource]).execute }
+    let(:params)    { super().merge :id => resource.id }
+    let(:resource_definition) do
+      described_class.resource_definition
+    end # let
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:show_resource)
+
+      expect(instance).
+        to respond_to(:show_resource, true).
+        with(0).arguments
+    end # it
+
+    it 'should require the resource' do
+      expect(instance).
+        to receive(:find_resource).
+        with(resource_class, params[:id]).
+        and_return(operation)
+
+      expect(instance.send :show_resource).to be operation
     end # it
   end # describe
 
@@ -248,6 +284,27 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
       expect(operation).
         to be_a Patina::Operations::Entities::FindMatchingOperation
+      expect(operation.resource_class).to be resource_class
+      expect(operation.called?).to be true
+    end # it
+  end # describe
+
+  describe '#find_resource' do
+    let(:resource) { Spec::Book.new }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:find_resource)
+
+      expect(instance).
+        to respond_to(:find_resource, true).
+        with(2).arguments
+    end # it
+
+    it 'should return an operation' do
+      operation = instance.send :find_resource, resource_class, resource.id
+
+      expect(operation).
+        to be_a Patina::Operations::Entities::FindOneOperation
       expect(operation.resource_class).to be resource_class
       expect(operation.called?).to be true
     end # it

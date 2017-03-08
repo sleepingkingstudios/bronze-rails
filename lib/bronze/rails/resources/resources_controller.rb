@@ -9,6 +9,8 @@ require 'bronze/rails/resources/resource'
 require 'bronze/rails/resources/resourceful_response_builder'
 require 'bronze/rails/responders/render_view_responder'
 
+# rubocop:disable Metrics/ModuleLength
+
 module Bronze::Rails::Resources
   # Mixin for implementing standard Rails resourceful functionality in a
   # controller.
@@ -58,6 +60,11 @@ module Bronze::Rails::Resources
       responder.call(build_response new_resource)
     end # method new
 
+    # GET /path/to/resources/show
+    def show
+      responder.call(build_response show_resource)
+    end # method show
+
     private
 
     ############################################################################
@@ -78,6 +85,10 @@ module Bronze::Rails::Resources
       build_resource resource_class, resource_params
     end # method new_resource
 
+    def show_resource
+      find_resource resource_class, params[:id]
+    end # method show_resource
+
     ############################################################################
     ###                             Operations                               ###
     ############################################################################
@@ -94,6 +105,13 @@ module Bronze::Rails::Resources
         resource_class
       ).execute(filter_params)
     end # method find_matching_resources
+
+    def find_resource resource_class, resource_id
+      Patina::Operations::Entities::FindOneOperation.new(
+        repository,
+        resource_class
+      ).execute(resource_id)
+    end # method find_resource
 
     def insert_resource resource
       Patina::Operations::Entities::InsertOneOperation.new(
@@ -166,3 +184,5 @@ module Bronze::Rails::Resources
     end # method response_builder
   end # module
 end # module
+
+# rubocop:enable Metrics/ModuleLength

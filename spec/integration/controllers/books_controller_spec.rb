@@ -47,6 +47,16 @@ RSpec.describe BooksController, :type => :controller do
     end # let
   end # shared_context
 
+  shared_examples 'should require a book id' do
+    describe 'when the book id is invalid' do
+      let(:book_id) { Spec::Book.new.id }
+
+      include_examples 'should redirect to',
+        ->() { books_path },
+        :as => 'books_path'
+    end # describe
+  end # shared_examples
+
   let(:books_collection) do
     transform =
       Bronze::Entities::Transforms::EntityTransform.new(Spec::Book)
@@ -201,6 +211,28 @@ RSpec.describe BooksController, :type => :controller do
 
         expect(book).to be_a Spec::Book
         expect(book_attributes).to be == expected_attributes
+      } # end include_examples
+  end # describe
+
+  describe '#show' do
+    include_context 'when the collection has many books'
+
+    let(:book)    { books_collection.to_a.first }
+    let(:book_id) { book.id }
+    let(:params)  { super().merge :id => book_id }
+
+    def perform_action
+      get :show, :headers => headers, :params => params
+    end # method perform_action
+
+    include_examples 'should require a book id'
+
+    include_examples 'should render template',
+      'books/show',
+      lambda { |options|
+        found_book = options[:locals][:book]
+
+        expect(found_book).to be == book
       } # end include_examples
   end # describe
 end # describe
