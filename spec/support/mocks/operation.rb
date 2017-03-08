@@ -3,7 +3,7 @@
 require 'bronze/operations/null_operation'
 
 module Spec
-  class Operation < Bronze::Operations::Operation
+  class Operation < Bronze::Operations::NullOperation
     def initialize resources: []
       @resources = resources
     end # constructor

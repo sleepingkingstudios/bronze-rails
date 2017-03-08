@@ -8,13 +8,6 @@ RSpec.describe BooksController, :type => :controller do
   include Spec::Examples::Integration::ControllerExamples
 
   shared_context 'when the collection has many books' do
-    let(:repository) { controller.send :repository }
-    let(:books_collection) do
-      transform =
-        Bronze::Entities::Transforms::EntityTransform.new(Spec::Book)
-
-      repository.collection(:books, transform)
-    end # let
     let(:attributes) do
       [
         {
@@ -54,8 +47,89 @@ RSpec.describe BooksController, :type => :controller do
     end # let
   end # shared_context
 
+  let(:books_collection) do
+    transform =
+      Bronze::Entities::Transforms::EntityTransform.new(Spec::Book)
+
+    controller.send(:repository).collection(:books, transform)
+  end # let
+
   let(:params)  { {} }
   let(:headers) { {} }
+
+  describe '#create' do
+    let(:attributes) { {} }
+    let(:params)     { super().merge :book => attributes }
+
+    def perform_action
+      post :create, :headers => headers, :params => params
+    end # method perform_action
+
+    describe 'with invalid attributes' do
+      let(:attributes) do
+        { :series => 'The Lord of the Rings' }
+      end # let
+      let(:expected_attributes) do
+        hsh = {}
+
+        Spec::Book.attributes.keys.each do |attr_name|
+          next if attr_name == :id
+
+          hsh[attr_name] = attributes[attr_name]
+        end # each
+
+        hsh
+      end # let
+      let(:expected_error) do
+        Bronze::Errors::Error.new(
+          [:book, :title],
+          Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
+          {}
+        ) # end error
+      end # let
+
+      include_examples 'should render template',
+        'books/new',
+        { :status => :unprocessable_entity },
+        lambda { |options|
+          book = options[:locals][:book]
+          book_attributes = book.attributes.tap { |hsh| hsh.delete :id }
+
+          expect(book).to be_a Spec::Book
+          expect(book_attributes).to be == expected_attributes
+
+          errors = options[:locals][:errors]
+          expect(errors).to be_a Bronze::Errors::Errors
+          expect(errors[:book][:title]).to include expected_error
+        } # end include_examples
+
+      it 'should not create a book' do
+        expect { perform_action }.not_to change(books_collection, :count)
+      end # it
+    end # describe
+
+    describe 'with valid attributes' do
+      let(:attributes) do
+        {
+          :title => 'The Hobbit',
+          :series => 'The Lord of the Rings'
+        } # attributes
+      end # let
+      let(:created_book) { books_collection.matching(attributes).one }
+
+      include_examples 'should redirect to',
+        ->() { book_path(created_book) },
+        :as => 'book_path'
+
+      it 'should create the book' do
+        expect { perform_action }.to change(books_collection, :count).by(1)
+
+        attributes.each do |attr_name, value|
+          expect(created_book.send attr_name).to be == value
+        end # each
+      end # it
+    end # describe
+  end # describe
 
   describe '#index' do
     def perform_action
@@ -102,7 +176,7 @@ RSpec.describe BooksController, :type => :controller do
   describe '#new' do
     let(:attributes) { {} }
     let(:params)     { super().merge :book => attributes }
-    let(:expected) do
+    let(:expected_attributes) do
       hsh = {}
 
       Spec::Book.attributes.keys.each do |attr_name|
@@ -125,7 +199,7 @@ RSpec.describe BooksController, :type => :controller do
         book_attributes = book.attributes.tap { |hsh| hsh.delete :id }
 
         expect(book).to be_a Spec::Book
-        expect(book_attributes).to be == expected
+        expect(book_attributes).to be == expected_attributes
       } # end include_examples
   end # describe
 end # describe

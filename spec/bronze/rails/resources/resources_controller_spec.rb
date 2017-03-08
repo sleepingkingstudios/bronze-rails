@@ -24,10 +24,11 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # before example
   end # shared_context
 
-  shared_examples 'should delegate to the operation' do |action_name|
-    operation_name = :"#{action_name}_resource"
+  shared_examples 'should delegate to the operation' \
+  do |action_name, operation_name = nil|
+    operation_name ||= :"#{action_name}_resource"
 
-    let(:operation) { Spec::Operation.new }
+    let(:operation) { Spec::Operation.new.execute }
     let(:response)  { double('response') }
 
     it "should delegate to the ##{operation_name} operation" do
@@ -84,34 +85,75 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # wrap_context
   end # describe
 
-  ##############################################################################
-  ###                                 Actions                                ###
-  ##############################################################################
+  describe '#create' do
+    include_context 'when the resource is defined'
+
+    it { expect(instance).to respond_to(:create).with(0).arguments }
+
+    include_examples 'should delegate to the operation', :create
+  end # describe
 
   describe '#index' do
     include_context 'when the resource is defined'
 
-    let(:operation) { Bronze::Operations::NullOperation.new }
-    let(:response)  { double('response') }
-
     it { expect(instance).to respond_to(:index).with(0).arguments }
 
-    it 'should delegate to the operation' do
-      expect(instance).
-        to receive(:find_matching_resources).
-        with(resource_class, instance.send(:filter_params)).
-        and_return(operation)
+    include_examples 'should delegate to the operation',
+      :index,
+      :index_resources
+  end # describe
+
+  describe '#new' do
+    include_context 'when the resource is defined'
+
+    it { expect(instance).to respond_to(:new).with(0).arguments }
+
+    include_examples 'should delegate to the operation', :new
+  end # describe
+
+  ##############################################################################
+  ###                                 Actions                                ###
+  ##############################################################################
+
+  describe '#create_resource' do
+    include_context 'when the resource is defined'
+
+    let(:resource)  { Spec::Book.new }
+    let(:build_operation) do
+      Spec::Operation.new(:resources => [resource]).execute
+    end # let
+    let(:validate_operation) do
+      Spec::Operation.new(:resources => [resource]).execute
+    end # let
+    let(:insert_operation) do
+      Spec::Operation.new(:resources => [resource]).execute
+    end # let
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:create_resource)
 
       expect(instance).
-        to receive(:build_response).
-        with(operation).
-        and_return(response)
+        to respond_to(:create_resource, true).
+        with(0).arguments
+    end # it
 
-      expect(instance.send :responder).
-        to receive(:call).
-        with(response)
+    it 'should build, validate and insert the resource' do
+      expect(instance).
+        to receive(:build_resource).
+        with(resource_class, instance.send(:resource_params)).
+        and_return(build_operation)
 
-      instance.index
+      expect(instance).
+        to receive(:validate_resource).
+        with(build_operation.resource).
+        and_return(validate_operation)
+
+      expect(instance).
+        to receive(:insert_resource).
+        with(validate_operation.resource).
+        and_return(insert_operation)
+
+      expect(instance.send :create_resource).to be insert_operation
     end # it
   end # describe
 
@@ -136,14 +178,6 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
       expect(instance.send :index_resources).to be operation
     end # it
-  end # describe
-
-  describe '#new' do
-    include_context 'when the resource is defined'
-
-    it { expect(instance).to respond_to(:new).with(0).arguments }
-
-    include_examples 'should delegate to the operation', :new
   end # describe
 
   describe '#new_resource' do
@@ -207,6 +241,49 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
       expect(operation).
         to be_a Patina::Operations::Entities::FindMatchingOperation
       expect(operation.resource_class).to be resource_class
+      expect(operation.called?).to be true
+    end # it
+  end # describe
+
+  describe '#insert_resource' do
+    include_context 'when the resource is defined'
+
+    let(:resource) { Spec::Book.new }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:insert_resource)
+
+      expect(instance).
+        to respond_to(:insert_resource, true).
+        with(1).argument
+    end # it
+
+    it 'should return an operation' do
+      operation = instance.send :insert_resource, resource
+
+      expect(operation).
+        to be_a Patina::Operations::Entities::InsertOneOperation
+      expect(operation.resource_class).to be resource_class
+      expect(operation.called?).to be true
+    end # it
+  end # describe
+
+  describe '#validate_resource' do
+    let(:resource) { Spec::Book.new }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:validate_resource)
+
+      expect(instance).
+        to respond_to(:validate_resource, true).
+        with(1).argument
+    end # it
+
+    it 'should return an operation' do
+      operation = instance.send :validate_resource, resource
+
+      expect(operation).
+        to be_a Patina::Operations::Entities::ValidateOneOperation
       expect(operation.called?).to be true
     end # it
   end # describe

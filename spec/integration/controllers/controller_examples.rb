@@ -33,6 +33,7 @@ module Spec::Examples::Integration
       end # if
 
       it example_description do
+        allow(controller).to receive(:redirect_to).and_call_original
         allow(controller).to receive(:render).and_call_original
 
         perform_action
@@ -40,6 +41,36 @@ module Spec::Examples::Integration
         expect(response.status).to be == status_code
 
         instance_exec(&block) if block.is_a?(Proc)
+      end # it
+    end # shared_examples
+
+    shared_examples 'should redirect to' do |redirect_path, *args|
+      block = args.pop if args.last.is_a?(Proc)
+      opts  = args.last.is_a?(Hash) ? args.pop : {}
+
+      example_description =
+        "should redirect to #{opts.fetch :as, redirect_path}"
+
+      it example_description do
+        allow(controller).to receive(:redirect_to).and_call_original
+        allow(controller).to receive(:render).and_call_original
+
+        perform_action
+
+        expected_path =
+          if redirect_path.is_a?(Proc)
+            redirect_path = instance_exec(&redirect_path)
+          else
+            redirect_path
+          end # if-else
+
+        expect(controller).not_to have_received(:render)
+
+        expect(controller).to have_received(:redirect_to) { |path|
+          expect(path).to be == expected_path
+
+          instance_exec(&block) if block.is_a?(Proc)
+        } # end redirect_to options
       end # it
     end # shared_examples
 
@@ -52,6 +83,8 @@ module Spec::Examples::Integration
         status,
         { :description => "and render template #{template}" },
         lambda {
+          expect(controller).not_to have_received(:redirect_to)
+
           expect(controller).to have_received(:render) { |options|
             expect(options[:template]).to be == template
 

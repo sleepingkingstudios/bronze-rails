@@ -43,6 +43,11 @@ module Bronze::Rails::Resources
       :to        => :resource_definition,
       :allow_nil => true
 
+    # POST /path/to/resources
+    def create
+      responder.call(build_response create_resource)
+    end # method create
+
     # GET /path/to/resources
     def index
       responder.call(build_response index_resources)
@@ -58,6 +63,12 @@ module Bronze::Rails::Resources
     ############################################################################
     ###                               Actions                                ###
     ############################################################################
+
+    def create_resource
+      build_resource(resource_class, resource_params).
+        then { |operation| validate_resource(operation.resource) }.
+        then { |operation| insert_resource(operation.resource) }
+    end # method create_resource
 
     def index_resources
       find_matching_resources resource_class, filter_params
@@ -83,6 +94,17 @@ module Bronze::Rails::Resources
         resource_class
       ).execute(filter_params)
     end # method find_matching_resources
+
+    def insert_resource resource
+      Patina::Operations::Entities::InsertOneOperation.new(
+        repository,
+        resource_class
+      ).execute(resource)
+    end # method insert_resource
+
+    def validate_resource resource
+      Patina::Operations::Entities::ValidateOneOperation.new.execute(resource)
+    end # method validate_resource
 
     ############################################################################
     ###                               Helpers                                ###
