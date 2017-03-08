@@ -257,4 +257,80 @@ RSpec.describe BooksController, :type => :controller do
         expect(found_book).to be == book
       } # end include_examples
   end # describe
+
+  describe '#update' do
+    include_context 'when the collection has many books'
+
+    let(:book)    { books_collection.to_a.first }
+    let(:book_id) { book.id }
+    let(:params)  { super().merge :id => book_id, :book => update_attributes }
+    let(:update_attributes) do
+      {}
+    end # let
+
+    def perform_action
+      patch :update, :headers => headers, :params => params
+    end # method perform_action
+
+    include_examples 'should require a book id'
+
+    describe 'with invalid attributes' do
+      let(:update_attributes) do
+        { :title => '' }
+      end # let
+      let(:expected_attributes) do
+        book.attributes.merge(update_attributes).tap { |hsh| hsh.delete :id }
+      end # let
+      let(:expected_error) do
+        Bronze::Errors::Error.new(
+          [:book, :title],
+          Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
+          {}
+        ) # end error
+      end # let
+
+      include_examples 'should render template',
+        'books/edit',
+        { :status => :unprocessable_entity },
+        lambda { |options|
+          changed_book = options[:locals][:book]
+          book_attributes = changed_book.attributes.tap { |hsh| hsh.delete :id }
+
+          expect(changed_book).to be_a Spec::Book
+          expect(book_attributes).to be == expected_attributes
+
+          errors = options[:locals][:errors]
+          expect(errors).to be_a Bronze::Errors::Errors
+          expect(errors[:book][:title]).to include expected_error
+        } # end include_examples
+
+      it 'should not update the book' do
+        expect { perform_action }.
+          not_to change { books_collection.find(book.id).attributes }
+      end # it
+    end # describe
+
+    describe 'with valid attributes' do
+      let(:update_attributes) do
+        {
+          :title      => 'The Hobbit',
+          :series     => 'The Lord of the Rings',
+          :page_count => 320
+        } # attributes
+      end # let
+      let(:expected_attributes) do
+        book.attributes.merge(update_attributes)
+      end # let
+
+      include_examples 'should redirect to',
+        ->() { book_path(book) },
+        :as => 'book_path'
+
+      it 'should update the book' do
+        expect { perform_action }.
+          to change { books_collection.find(book.id).attributes }.
+          to be == expected_attributes
+      end # it
+    end # describe
+  end # describe
 end # describe

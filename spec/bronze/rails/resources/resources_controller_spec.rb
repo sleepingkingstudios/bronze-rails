@@ -36,8 +36,9 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
   do |action_name, operation_name = nil|
     operation_name ||= :"#{action_name}_resource"
 
-    let(:operation) { Spec::Operation.new.execute }
-    let(:response)  { double('response') }
+    let(:action_name) { action_name }
+    let(:operation)   { Spec::Operation.new.execute }
+    let(:response)    { double('response') }
 
     it "should delegate to the ##{operation_name} operation" do
       expect(instance).
@@ -70,6 +71,25 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
   let(:instance) do
     described_class.new :action_name => action_name, :params => params
   end # let
+
+  describe '::included' do
+    let(:described_class) { Class.new(Spec::Controller) }
+    let(:primary_callback) do
+      {
+        :method_name => :require_primary_resource,
+        :options     => { :only => %i(update destroy) }
+      } # end callback
+    end # let
+
+    it 'should set the before_action callback' do
+      expect do
+        described_class.send :include,
+          Bronze::Rails::Resources::ResourcesController
+      end. # expect
+        to change { described_class.callbacks[:before] }.
+        to include primary_callback
+    end # it
+  end # describe
 
   describe '::resource' do
     it { expect(described_class).to respond_to(:resource).with(1..2).arguments }
@@ -135,6 +155,14 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     include_examples 'should delegate to the operation', :show
   end # describe
 
+  describe '#update' do
+    include_context 'when the resource is defined'
+
+    it { expect(instance).to respond_to(:update).with(0).arguments }
+
+    include_examples 'should delegate to the operation', :update
+  end # describe
+
   ##############################################################################
   ###                                 Actions                                ###
   ##############################################################################
@@ -174,7 +202,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
       expect(instance).
         to receive(:insert_one).
-        with(validate_operation.resource).
+        with(resource_class, validate_operation.resource).
         and_return(insert_operation)
 
       expect(instance.send :create_resource).to be insert_operation
@@ -277,9 +305,162 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
   end # describe
 
+  describe '#update_resource' do
+    include_context 'when the resource is defined'
+
+    let(:resource) { Spec::Book.new }
+    let(:assign_operation) do
+      Spec::Operation.new(:resources => [resource]).execute
+    end # let
+    let(:validate_operation) do
+      Spec::Operation.new(:resources => [resource]).execute
+    end # let
+    let(:update_operation) do
+      Spec::Operation.new(:resources => [resource]).execute
+    end # let
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:update_resource)
+
+      expect(instance).
+        to respond_to(:update_resource, true).
+        with(0).arguments
+    end # it
+
+    it 'should assign, validate and update the resource' do
+      instance.send :primary_resource=, resource
+
+      expect(instance).
+        to receive(:assign_one).
+        with(resource, instance.send(:resource_params)).
+        and_return(assign_operation)
+
+      expect(instance).
+        to receive(:validate_one).
+        with(assign_operation.resource).
+        and_return(validate_operation)
+
+      expect(instance).
+        to receive(:update_one).
+        with(resource_class, validate_operation.resource).
+        and_return(update_operation)
+
+      expect(instance.send :update_resource).to be update_operation
+    end # it
+  end # describe
+
+  ##############################################################################
+  ###                               Callbacks                                ###
+  ##############################################################################
+
+  describe '#require_one' do
+    include_context 'when the resource is defined'
+
+    let(:resource)  { Spec::Book.new }
+    let(:operation) { Spec::Operation.new(:resources => [resource]).execute }
+    let(:params)    { super().merge :id => resource.id }
+    let(:resource_definition) do
+      described_class.resource_definition
+    end # let
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:require_one)
+
+      expect(instance).
+        to respond_to(:require_one, true).
+        with(2).arguments
+    end # it
+
+    it 'should find the resource' do
+      expect(instance).
+        to receive(:find_one).
+        with(resource_class, params[:id]).
+        and_return(operation)
+
+      expect(
+        instance.send :require_one, resource_definition, params[:id]
+      ).to be operation
+    end # it
+
+    context 'when the resource is missing' do
+      let(:operation) { super().fail! }
+
+      it 'should redirect to the resources path' do
+        allow(instance).to receive(:redirect_to).and_call_original
+
+        expect(instance).
+          to receive(:find_one).
+          with(resource_class, params[:id]).
+          and_return(operation)
+
+        expect(
+          instance.send :require_one, resource_definition, params[:id]
+        ).to be operation
+
+        expect(instance).to have_received(:redirect_to) { |path|
+          expect(path).to be == resource_definition.resources_path
+        } # end redirect_to options
+      end # it
+    end # context
+  end # describe
+
+  describe '#require_primary_resource' do
+    include_context 'when the resource is defined'
+
+    let(:resource)  { Spec::Book.new }
+    let(:operation) { Spec::Operation.new(:resources => [resource]).execute }
+    let(:resource_definition) do
+      described_class.resource_definition
+    end # let
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:require_primary_resource)
+
+      expect(instance).
+        to respond_to(:require_primary_resource, true).
+        with(0).arguments
+    end # it
+
+    it 'should find and assign the resource' do
+      expect(instance).
+        to receive(:require_one).
+        with(resource_definition, params[:id]).
+        and_return(operation)
+
+      result = nil
+
+      expect { result = instance.send :require_primary_resource }.
+        to change(instance, :primary_resource).
+        to be operation.resource
+
+      expect(result).to be operation
+    end # it
+  end # describe
+
   ##############################################################################
   ###                               Operations                               ###
   ##############################################################################
+
+  describe '#assign_one' do
+    let(:resource)   { Spec::Book.new }
+    let(:attributes) { {} }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:assign_one)
+
+      expect(instance).
+        to respond_to(:assign_one, true).
+        with(2).arguments
+    end # it
+
+    it 'should return an operation' do
+      operation = instance.send :assign_one, resource, attributes
+
+      expect(operation).
+        to be_a Patina::Operations::Entities::AssignOneOperation
+      expect(operation.called?).to be true
+    end # it
+  end # describe
 
   describe '#build_one' do
     it 'should define the private method' do
@@ -350,14 +531,37 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
       expect(instance).
         to respond_to(:insert_one, true).
-        with(1).argument
+        with(2).arguments
     end # it
 
     it 'should return an operation' do
-      operation = instance.send :insert_one, resource
+      operation = instance.send :insert_one, resource_class, resource
 
       expect(operation).
         to be_a Patina::Operations::Entities::InsertOneOperation
+      expect(operation.resource_class).to be resource_class
+      expect(operation.called?).to be true
+    end # it
+  end # describe
+
+  describe '#update_one' do
+    include_context 'when the resource is defined'
+
+    let(:resource) { Spec::Book.new }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:update_one)
+
+      expect(instance).
+        to respond_to(:update_one, true).
+        with(2).arguments
+    end # it
+
+    it 'should return an operation' do
+      operation = instance.send :update_one, resource_class, resource
+
+      expect(operation).
+        to be_a Patina::Operations::Entities::UpdateOneOperation
       expect(operation.resource_class).to be resource_class
       expect(operation.called?).to be true
     end # it
@@ -442,6 +646,16 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
 
     it { expect(instance.send :permitted_attributes).to be == [] }
+  end # describe
+
+  describe '#primary_resource' do
+    it 'should define the private reader' do
+      expect(instance).not_to respond_to(:primary_resource)
+
+      expect(instance).to respond_to(:primary_resource, true).with(0).arguments
+    end # it
+
+    it { expect(instance.send :primary_resource).to be nil }
   end # describe
 
   describe '#resource_class' do

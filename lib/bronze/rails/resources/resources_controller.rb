@@ -37,6 +37,14 @@ module Bronze::Rails::Resources
       attr_reader :resource_definition
     end # module
 
+    def self.included other
+      super
+
+      return unless other.respond_to?(:before_action)
+
+      other.before_action :require_primary_resource, :only => %i(update destroy)
+    end # class method included
+
     delegate :resource_definition, :to => :class
 
     delegate \
@@ -70,6 +78,11 @@ module Bronze::Rails::Resources
       responder.call(build_response show_resource)
     end # method show
 
+    # PATCH /path/to/resources/:id
+    def update
+      responder.call(build_response update_resource)
+    end # method update
+
     private
 
     ############################################################################
@@ -79,7 +92,7 @@ module Bronze::Rails::Resources
     def create_resource
       build_one(resource_class, resource_params).
         then { |operation| validate_one(operation.resource) }.
-        then { |operation| insert_one(operation.resource) }
+        then { |operation| insert_one(resource_class, operation.resource) }
     end # method create_resource
 
     def edit_resource
@@ -98,9 +111,38 @@ module Bronze::Rails::Resources
       find_one resource_class, params[:id]
     end # method show_resource
 
+    def update_resource
+      assign_one(primary_resource, resource_params).
+        then { |operation| validate_one(operation.resource) }.
+        then { |operation| update_one(resource_class, operation.resource) }
+    end # method update_resource
+
+    ############################################################################
+    ###                             Callbacks                                ###
+    ############################################################################
+
+    def require_one resource_definition, resource_id
+      find_one(resource_definition.resource_class, resource_id).
+        else do
+          builder = response_builder(resource_definition)
+
+          responder.call(builder.build_not_found_response)
+        end # else
+    end # method require_one
+
+    def require_primary_resource
+      require_one(resource_definition, params[:id]).
+        then { |operation| @primary_resource = operation.resource }
+    end # method require_primary_resource
+
     ############################################################################
     ###                             Operations                               ###
     ############################################################################
+
+    def assign_one resource, resource_params
+      Patina::Operations::Entities::AssignOneOperation.new.
+        execute(resource, resource_params)
+    end # method assign_one
 
     def build_one resource_class, resource_params
       Patina::Operations::Entities::BuildOneOperation.new(
@@ -122,8 +164,15 @@ module Bronze::Rails::Resources
       ).execute(resource_id)
     end # method find_one
 
-    def insert_one resource
+    def insert_one resource_class, resource
       Patina::Operations::Entities::InsertOneOperation.new(
+        repository,
+        resource_class
+      ).execute(resource)
+    end # method insert_one
+
+    def update_one resource_class, resource
+      Patina::Operations::Entities::UpdateOneOperation.new(
         repository,
         resource_class
       ).execute(resource)
@@ -136,6 +185,8 @@ module Bronze::Rails::Resources
     ############################################################################
     ###                               Helpers                                ###
     ############################################################################
+
+    attr_accessor :primary_resource
 
     def build_response operation
       response_builder.build_response operation, :action => action_name
