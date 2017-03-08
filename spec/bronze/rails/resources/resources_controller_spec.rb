@@ -163,17 +163,17 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
     it 'should build, validate and insert the resource' do
       expect(instance).
-        to receive(:build_resource).
+        to receive(:build_one).
         with(resource_class, instance.send(:resource_params)).
         and_return(build_operation)
 
       expect(instance).
-        to receive(:validate_resource).
+        to receive(:validate_one).
         with(build_operation.resource).
         and_return(validate_operation)
 
       expect(instance).
-        to receive(:insert_resource).
+        to receive(:insert_one).
         with(validate_operation.resource).
         and_return(insert_operation)
 
@@ -198,7 +198,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
     it 'should require the resource' do
       expect(instance).
-        to receive(:find_resource).
+        to receive(:find_one).
         with(resource_class, params[:id]).
         and_return(operation)
 
@@ -221,7 +221,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
     it 'should find the matching resources' do
       expect(instance).
-        to receive(:find_matching_resources).
+        to receive(:find_matching).
         with(resource_class, instance.send(:filter_params)).
         and_return(operation)
 
@@ -244,7 +244,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
     it 'should build the resource' do
       expect(instance).
-        to receive(:build_resource).
+        to receive(:build_one).
         with(resource_class, instance.send(:resource_params)).
         and_return(operation)
 
@@ -269,7 +269,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
     it 'should require the resource' do
       expect(instance).
-        to receive(:find_resource).
+        to receive(:find_one).
         with(resource_class, params[:id]).
         and_return(operation)
 
@@ -281,17 +281,17 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
   ###                               Operations                               ###
   ##############################################################################
 
-  describe '#build_resource' do
+  describe '#build_one' do
     it 'should define the private method' do
-      expect(instance).not_to respond_to(:build_resource)
+      expect(instance).not_to respond_to(:build_one)
 
       expect(instance).
-        to respond_to(:build_resource, true).
+        to respond_to(:build_one, true).
         with(2).arguments
     end # it
 
     it 'should return an operation' do
-      operation = instance.send :build_resource, resource_class, {}
+      operation = instance.send :build_one, resource_class, {}
 
       expect(operation).
         to be_a Patina::Operations::Entities::BuildOneOperation
@@ -300,17 +300,17 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
   end # describe
 
-  describe '#find_matching_resources' do
+  describe '#find_matching' do
     it 'should define the private method' do
-      expect(instance).not_to respond_to(:find_matching_resources)
+      expect(instance).not_to respond_to(:find_matching)
 
       expect(instance).
-        to respond_to(:find_matching_resources, true).
+        to respond_to(:find_matching, true).
         with(2).arguments
     end # it
 
     it 'should return an operation' do
-      operation = instance.send :find_matching_resources, resource_class, {}
+      operation = instance.send :find_matching, resource_class, {}
 
       expect(operation).
         to be_a Patina::Operations::Entities::FindMatchingOperation
@@ -319,19 +319,19 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
   end # describe
 
-  describe '#find_resource' do
+  describe '#find_one' do
     let(:resource) { Spec::Book.new }
 
     it 'should define the private method' do
-      expect(instance).not_to respond_to(:find_resource)
+      expect(instance).not_to respond_to(:find_one)
 
       expect(instance).
-        to respond_to(:find_resource, true).
+        to respond_to(:find_one, true).
         with(2).arguments
     end # it
 
     it 'should return an operation' do
-      operation = instance.send :find_resource, resource_class, resource.id
+      operation = instance.send :find_one, resource_class, resource.id
 
       expect(operation).
         to be_a Patina::Operations::Entities::FindOneOperation
@@ -340,21 +340,21 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
   end # describe
 
-  describe '#insert_resource' do
+  describe '#insert_one' do
     include_context 'when the resource is defined'
 
     let(:resource) { Spec::Book.new }
 
     it 'should define the private method' do
-      expect(instance).not_to respond_to(:insert_resource)
+      expect(instance).not_to respond_to(:insert_one)
 
       expect(instance).
-        to respond_to(:insert_resource, true).
+        to respond_to(:insert_one, true).
         with(1).argument
     end # it
 
     it 'should return an operation' do
-      operation = instance.send :insert_resource, resource
+      operation = instance.send :insert_one, resource
 
       expect(operation).
         to be_a Patina::Operations::Entities::InsertOneOperation
@@ -363,19 +363,19 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
   end # describe
 
-  describe '#validate_resource' do
+  describe '#validate_one' do
     let(:resource) { Spec::Book.new }
 
     it 'should define the private method' do
-      expect(instance).not_to respond_to(:validate_resource)
+      expect(instance).not_to respond_to(:validate_one)
 
       expect(instance).
-        to respond_to(:validate_resource, true).
+        to respond_to(:validate_one, true).
         with(1).argument
     end # it
 
     it 'should return an operation' do
-      operation = instance.send :validate_resource, resource
+      operation = instance.send :validate_one, resource
 
       expect(operation).
         to be_a Patina::Operations::Entities::ValidateOneOperation

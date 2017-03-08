@@ -77,61 +77,61 @@ module Bronze::Rails::Resources
     ############################################################################
 
     def create_resource
-      build_resource(resource_class, resource_params).
-        then { |operation| validate_resource(operation.resource) }.
-        then { |operation| insert_resource(operation.resource) }
+      build_one(resource_class, resource_params).
+        then { |operation| validate_one(operation.resource) }.
+        then { |operation| insert_one(operation.resource) }
     end # method create_resource
 
     def edit_resource
-      find_resource resource_class, params[:id]
+      find_one resource_class, params[:id]
     end # method edit_resource
 
     def index_resources
-      find_matching_resources resource_class, filter_params
+      find_matching resource_class, filter_params
     end # method index_resources
 
     def new_resource
-      build_resource resource_class, resource_params
+      build_one resource_class, resource_params
     end # method new_resource
 
     def show_resource
-      find_resource resource_class, params[:id]
+      find_one resource_class, params[:id]
     end # method show_resource
 
     ############################################################################
     ###                             Operations                               ###
     ############################################################################
 
-    def build_resource resource_class, resource_params
+    def build_one resource_class, resource_params
       Patina::Operations::Entities::BuildOneOperation.new(
         resource_class
       ).execute(resource_params)
-    end # method build_resource
+    end # method build_one
 
-    def find_matching_resources resource_class, filter_params
+    def find_matching resource_class, filter_params
       Patina::Operations::Entities::FindMatchingOperation.new(
         repository,
         resource_class
       ).execute(filter_params)
-    end # method find_matching_resources
+    end # method find_matching
 
-    def find_resource resource_class, resource_id
+    def find_one resource_class, resource_id
       Patina::Operations::Entities::FindOneOperation.new(
         repository,
         resource_class
       ).execute(resource_id)
-    end # method find_resource
+    end # method find_one
 
-    def insert_resource resource
+    def insert_one resource
       Patina::Operations::Entities::InsertOneOperation.new(
         repository,
         resource_class
       ).execute(resource)
-    end # method insert_resource
+    end # method insert_one
 
-    def validate_resource resource
+    def validate_one resource
       Patina::Operations::Entities::ValidateOneOperation.new.execute(resource)
-    end # method validate_resource
+    end # method validate_one
 
     ############################################################################
     ###                               Helpers                                ###
