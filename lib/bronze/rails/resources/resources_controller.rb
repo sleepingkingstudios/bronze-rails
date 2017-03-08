@@ -114,6 +114,18 @@ module Bronze::Rails::Resources
       response_builder.build_response operation, :action => action_name
     end # method build_response
 
+    def coerce_attributes resource_class, attributes
+      attributes.each do |attr_name, value|
+        attribute = resource_class.attributes[attr_name.intern]
+
+        if attribute && attribute.object_type == Integer && value.is_a?(String)
+          attributes[attr_name] = value.to_i
+        end # if
+      end # each
+
+      attributes
+    end # method coerce_attributes
+
     def filter_params
       whitelist = %i(matching)
 
@@ -132,10 +144,13 @@ module Bronze::Rails::Resources
     end # method permitted_attributes
 
     def resource_params
-      params.
+      hsh =
+        params.
         permit(resource_name => permitted_attributes).
         fetch(resource_name, {}).
         to_h
+
+      coerce_attributes(resource_class, hsh)
     end # method resource_params
 
     def responder

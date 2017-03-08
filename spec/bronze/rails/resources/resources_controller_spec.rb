@@ -24,6 +24,14 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # before example
   end # shared_context
 
+  shared_context 'when all attributes are permitted' do
+    before(:example) do
+      described_class.send :define_method,
+        :permitted_attributes,
+        ->() { resource_class.attributes.keys }
+    end # before example
+  end # shared_context
+
   shared_examples 'should delegate to the operation' \
   do |action_name, operation_name = nil|
     operation_name ||= :"#{action_name}_resource"
@@ -407,6 +415,18 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
           {
             'title'  => attributes[:title],
             'series' => attributes[:series]
+          } # end expected attributes
+        end # let
+
+        it { expect(instance.send :resource_params).to be == expected }
+      end # wrap_context
+
+      wrap_context 'when all attributes are permitted' do
+        let(:expected) do
+          {
+            'title'      => attributes[:title],
+            'series'     => attributes[:series],
+            'page_count' => attributes[:page_count]
           } # end expected attributes
         end # let
 

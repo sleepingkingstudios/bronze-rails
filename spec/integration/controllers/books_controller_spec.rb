@@ -111,8 +111,9 @@ RSpec.describe BooksController, :type => :controller do
     describe 'with valid attributes' do
       let(:attributes) do
         {
-          :title => 'The Hobbit',
-          :series => 'The Lord of the Rings'
+          :title      => 'The Hobbit',
+          :series     => 'The Lord of the Rings',
+          :page_count => 320
         } # attributes
       end # let
       let(:created_book) { books_collection.matching(attributes).one }
