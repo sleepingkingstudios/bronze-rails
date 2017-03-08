@@ -101,6 +101,14 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     include_examples 'should delegate to the operation', :create
   end # describe
 
+  describe '#edit' do
+    include_context 'when the resource is defined'
+
+    it { expect(instance).to respond_to(:edit).with(0).arguments }
+
+    include_examples 'should delegate to the operation', :edit
+  end # describe
+
   describe '#index' do
     include_context 'when the resource is defined'
 
@@ -173,6 +181,31 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
   end # describe
 
+  describe '#edit_resource' do
+    include_context 'when the resource is defined'
+
+    let(:resource)  { Spec::Book.new }
+    let(:operation) { Spec::Operation.new(:resources => [resource]).execute }
+    let(:params)    { super().merge :id => resource.id }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:edit_resource)
+
+      expect(instance).
+        to respond_to(:edit_resource, true).
+        with(0).arguments
+    end # it
+
+    it 'should require the resource' do
+      expect(instance).
+        to receive(:find_resource).
+        with(resource_class, params[:id]).
+        and_return(operation)
+
+      expect(instance.send :edit_resource).to be operation
+    end # it
+  end # describe
+
   describe '#index_resources' do
     include_context 'when the resource is defined'
 
@@ -225,9 +258,6 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     let(:resource)  { Spec::Book.new }
     let(:operation) { Spec::Operation.new(:resources => [resource]).execute }
     let(:params)    { super().merge :id => resource.id }
-    let(:resource_definition) do
-      described_class.resource_definition
-    end # let
 
     it 'should define the private method' do
       expect(instance).not_to respond_to(:show_resource)

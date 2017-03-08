@@ -61,7 +61,9 @@ module Spec::Examples::Integration
           if redirect_path.is_a?(Proc)
             redirect_path = instance_exec(&redirect_path)
           else
+            # :nocov:
             redirect_path
+            # :nocov:
           end # if-else
 
         expect(controller).not_to have_received(:render)

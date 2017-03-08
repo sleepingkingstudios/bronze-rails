@@ -142,6 +142,28 @@ RSpec.describe BooksController, :type => :controller do
     end # describe
   end # describe
 
+  describe '#edit' do
+    include_context 'when the collection has many books'
+
+    let(:book)    { books_collection.to_a.first }
+    let(:book_id) { book.id }
+    let(:params)  { super().merge :id => book_id }
+
+    def perform_action
+      get :edit, :headers => headers, :params => params
+    end # method perform_action
+
+    include_examples 'should require a book id'
+
+    include_examples 'should render template',
+      'books/edit',
+      lambda { |options|
+        found_book = options[:locals][:book]
+
+        expect(found_book).to be == book
+      } # end include_examples
+  end # describe
+
   describe '#index' do
     def perform_action
       get :index, :headers => headers, :params => params
@@ -193,7 +215,7 @@ RSpec.describe BooksController, :type => :controller do
       Spec::Book.attributes.keys.each do |attr_name|
         next if attr_name == :id
 
-        hsh[attr_name] = attributes[attr_name]
+        hsh[attr_name] = nil
       end # each
 
       hsh

@@ -50,6 +50,11 @@ module Bronze::Rails::Resources
       responder.call(build_response create_resource)
     end # method create
 
+    # GET /path/to/resources/:id/edit
+    def edit
+      responder.call(build_response edit_resource)
+    end # method edit
+
     # GET /path/to/resources
     def index
       responder.call(build_response index_resources)
@@ -60,7 +65,7 @@ module Bronze::Rails::Resources
       responder.call(build_response new_resource)
     end # method new
 
-    # GET /path/to/resources/show
+    # GET /path/to/resources/:id
     def show
       responder.call(build_response show_resource)
     end # method show
@@ -76,6 +81,10 @@ module Bronze::Rails::Resources
         then { |operation| validate_resource(operation.resource) }.
         then { |operation| insert_resource(operation.resource) }
     end # method create_resource
+
+    def edit_resource
+      find_resource resource_class, params[:id]
+    end # method edit_resource
 
     def index_resources
       find_matching_resources resource_class, filter_params
