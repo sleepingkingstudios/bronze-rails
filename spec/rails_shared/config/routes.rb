@@ -20,4 +20,8 @@ Rails.application.routes.draw do
       resources :sections
     end # resources
   end # resources
+
+  resources :dungeons do
+    resources :dragons
+  end # resources
 end # routes

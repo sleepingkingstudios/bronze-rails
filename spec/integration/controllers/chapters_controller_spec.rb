@@ -153,6 +153,7 @@ RSpec.describe ChaptersController, :type => :controller do
           chapter_attributes = chapter.attributes.tap { |hsh| hsh.delete :id }
 
           expect(chapter).to be_a Spec::Chapter
+          expect(chapter.book).to be == book
           expect(chapter_attributes).to be == expected_attributes
 
           errors = options[:locals][:errors]
@@ -298,7 +299,6 @@ RSpec.describe ChaptersController, :type => :controller do
 
     let(:book)       { books.first }
     let(:book_id)    { book.id }
-    let(:params)     { super().merge :book_id => book_id }
     let(:attributes) { {} }
     let(:params) do
       super().merge :book_id => book_id, :chapter => attributes
@@ -321,6 +321,8 @@ RSpec.describe ChaptersController, :type => :controller do
       get :new, :headers => headers, :params => params
     end # method perform_action
 
+    include_examples 'should require a book id'
+
     include_examples 'should render template',
       'chapters/new',
       lambda { |options|
@@ -330,6 +332,7 @@ RSpec.describe ChaptersController, :type => :controller do
         chapter_attributes = chapter.attributes.tap { |hsh| hsh.delete :id }
 
         expect(chapter).to be_a Spec::Chapter
+        expect(chapter.book).to be == book
         expect(chapter_attributes).to be == expected_attributes
       } # end include_examples
   end # describe

@@ -154,7 +154,7 @@ module Bronze::Rails::Resources
 
           require_one(parent_definition, resource_id)
         end.then do |operation|
-          resources[parent_definition.resource_key] = operation.resource
+          resources[parent_definition.parent_key] = operation.resource
         end # then
       end # reduce
     end # method require_parent_resources
@@ -231,8 +231,8 @@ module Bronze::Rails::Resources
         next unless parent_definition
 
         primary_resource.send(
-          :"#{parent_definition.singular_association_name}=",
-          resources[parent_definition.resource_key]
+          :"#{parent_definition.parent_name}=",
+          resources[parent_definition.parent_key]
         ) # end set association
       end # each
     end # method assign_associations
@@ -243,7 +243,7 @@ module Bronze::Rails::Resources
       parent_definition = resource_definition.parent_resources.last
       if parent_definition
         (hsh[:resources] ||= {})[parent_definition.singular_association_key] =
-          resources[parent_definition.resource_key]
+          resources[parent_definition.parent_key]
       end # if
 
       hsh
@@ -309,7 +309,7 @@ module Bronze::Rails::Resources
       parent_definition = resource_definition.parent_resources.last
       if parent_definition
         hsh[parent_definition.singular_association_key] =
-          resources[parent_definition.resource_key]
+          resources[parent_definition.parent_key]
       end # if
 
       hsh
