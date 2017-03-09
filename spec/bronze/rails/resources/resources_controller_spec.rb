@@ -16,6 +16,22 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # before example
   end # shared_context
 
+  shared_context 'when the resource has a parent resource' do
+    let(:ancestors) do
+      [
+        {
+          :name  => :books,
+          :type  => :resource,
+          :class => Spec::Book
+        } # end books
+      ] # end ancestors
+    end # let
+    let(:resource_class) { Spec::Chapter }
+    let(:resource_options) do
+      super().merge :ancestors => ancestors
+    end # let
+  end # shared_context
+
   shared_context 'when a subset of attributes are permitted' do
     before(:example) do
       described_class.send :define_method,
@@ -74,6 +90,12 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
   describe '::included' do
     let(:described_class) { Class.new(Spec::Controller) }
+    let(:parents_callback) do
+      {
+        :method_name => :require_parent_resources,
+        :options     => {}
+      } # end callback
+    end # let
     let(:primary_callback) do
       {
         :method_name => :require_primary_resource,
@@ -87,7 +109,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
           Bronze::Rails::Resources::ResourcesController
       end. # expect
         to change { described_class.callbacks[:before] }.
-        to include primary_callback
+        to be == [parents_callback, primary_callback]
     end # it
   end # describe
 
@@ -438,6 +460,48 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # context
   end # describe
 
+  describe '#require_parent_resources' do
+    include_context 'when the resource is defined'
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:require_parent_resources)
+
+      expect(instance).
+        to respond_to(:require_parent_resources, true).
+        with(0).arguments
+    end # it
+
+    it 'should be a null operation' do
+      operation = instance.send :require_parent_resources
+
+      expect(operation).to be_a Bronze::Operations::NullOperation
+      expect(operation.called?).to be true
+    end # it
+
+    wrap_context 'when the resource has a parent resource' do
+      let(:book)      { Spec::Book.new }
+      let(:operation) { Spec::Operation.new(:resources => [book]).execute }
+      let(:resource_definition) do
+        described_class.resource_definition.parent_resources.last
+      end # let
+
+      it 'should find and assign the parent resource' do
+        expect(instance).
+          to receive(:require_one).
+          with(resource_definition, params[:id]).
+          and_return(operation)
+
+        result = nil
+
+        expect { result = instance.send :require_parent_resources }.
+          to change(instance, :resources).
+          to be == { :book => book }
+
+        expect(result).to be operation
+      end # it
+    end # wrap_context
+  end # describe
+
   describe '#require_primary_resource' do
     include_context 'when the resource is defined'
 
@@ -647,10 +711,12 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
   ##############################################################################
 
   describe '#build_response' do
+    include_context 'when the resource is defined'
+
     let(:action_name) { :index }
     let(:operation)   { double('operation') }
     let(:builder)     { instance.send :response_builder }
-    let(:response)    { double('response') }
+    let(:response)    { { :resources => {} } }
 
     it 'should define the private method' do
       expect(instance).not_to respond_to(:build_response)
@@ -668,9 +734,33 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
       expect(instance.send :build_response, operation).to be response
     end # it
+
+    wrap_context 'when the resource has a parent resource' do
+      let(:book) { Spec::Book.new }
+      let!(:expected) do
+        { :resources => { :book => book } }
+      end # let
+
+      before(:example) do
+        instance.send(:resources).update(:book => book)
+      end # before example
+
+      it 'should call the response builder' do
+        allow(instance).to receive(:response_builder).and_return(builder)
+
+        expect(builder).
+          to receive(:build_response).
+          with(operation, :action => action_name).
+          and_return(response)
+
+        expect(instance.send :build_response, operation).to be == expected
+      end # it
+    end # wrap_context
   end # describe
 
   describe '#filter_params' do
+    include_context 'when the resource is defined'
+
     let(:expected) { { 'matching' => {} } }
 
     it 'should define the private reader' do
@@ -689,7 +779,44 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
       it { expect(instance.send :filter_params).to be == expected }
     end # describe
+
+    wrap_context 'when the resource has a parent resource' do
+      let(:book)     { Spec::Book.new }
+      let(:params)   { super().merge :book_id => book.id }
+      let(:expected) { { 'matching' => { 'book_id' => book.id } } }
+
+      it { expect(instance.send :filter_params).to be == expected }
+
+      describe 'with matching :title => value' do
+        let(:params) do
+          super().merge :matching => { :title => 'A Princess of Mars' }
+        end # let
+        let(:expected) do
+          {
+            'matching' => {
+              'title'   => 'A Princess of Mars',
+              'book_id' => book.id
+            } # end matching
+          } # end expected
+        end # let
+
+        it { expect(instance.send :filter_params).to be == expected }
+      end # describe
+    end # wrap_context
   end # describe
+
+  describe '#null_operation' do
+    it 'should define the private reader' do
+      expect(instance).not_to respond_to(:null_operation)
+
+      expect(instance).to respond_to(:null_operation, true).with(0).arguments
+    end # it
+
+    it 'should return a null operation' do
+      expect(instance.send :null_operation).
+        to be_a Bronze::Operations::NullOperation
+    end # it
+  end # descrbe
 
   describe '#permitted_attributes' do
     it 'should define the private reader' do
@@ -789,6 +916,16 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         it { expect(instance.send :resource_params).to be == expected }
       end # wrap_context
     end # context
+  end # describe
+
+  describe '#resources' do
+    it 'should define the private reader' do
+      expect(instance).not_to respond_to(:resources)
+
+      expect(instance).to respond_to(:resources, true).with(0).arguments
+    end # it
+
+    it { expect(instance.send :resources).to be == {} }
   end # describe
 
   describe '#responder' do

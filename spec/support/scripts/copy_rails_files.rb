@@ -23,7 +23,7 @@ module Spec
         source_name.dup.tap { |str| str[0..shared_path.length] = '' }
       target_name = File.join(rails_path, short_name)
 
-      puts "  copying #{short_name} from #{source_name} to #{target_name}"
+      puts "  copying #{short_name} to #{target_name}"
 
       FileUtils.cp source_name, target_name
     end # method copy_files

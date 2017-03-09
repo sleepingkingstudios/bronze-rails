@@ -3,6 +3,8 @@
 require 'sleeping_king_studios/tools/toolbox/delegator'
 require 'sleeping_king_studios/tools/toolbox/mixin'
 
+require 'bronze/operations/null_operation'
+
 require 'patina/operations/entities'
 
 require 'bronze/rails/resources/resource'
@@ -41,6 +43,8 @@ module Bronze::Rails::Resources
       super
 
       return unless other.respond_to?(:before_action)
+
+      other.before_action :require_parent_resources
 
       other.before_action :require_primary_resource, :only => %i(update destroy)
     end # class method included
@@ -139,6 +143,19 @@ module Bronze::Rails::Resources
         end # else
     end # method require_one
 
+    def require_parent_resources
+      resource_definition.parent_resources.reduce(null_operation.execute) \
+      do |last_operation, parent_definition|
+        last_operation.then do
+          resource_id = params[parent_definition.primary_key]
+
+          require_one(parent_definition, resource_id)
+        end.then do |operation|
+          resources[parent_definition.resource_key] = operation.resource
+        end # then
+      end # reduce
+    end # method require_parent_resources
+
     def require_primary_resource
       require_one(resource_definition, params[:id]).
         then { |operation| @primary_resource = operation.resource }
@@ -205,7 +222,15 @@ module Bronze::Rails::Resources
     attr_accessor :primary_resource
 
     def build_response operation
-      response_builder.build_response operation, :action => action_name
+      hsh = response_builder.build_response operation, :action => action_name
+
+      parent_definition = resource_definition.parent_resources.last
+      if parent_definition
+        hsh[:resources][parent_definition.singular_association_key] =
+          resources[parent_definition.resource_key]
+      end # if
+
+      hsh
     end # method build_response
 
     def coerce_attributes resource_class, attributes
@@ -220,10 +245,13 @@ module Bronze::Rails::Resources
       attributes
     end # method coerce_attributes
 
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/MethodLength
     def filter_params
       whitelist = %i(matching)
 
-      params.
+      filter =
+        params.
         permit(whitelist).
         tap do |hsh|
           whitelist.each do |key|
@@ -231,7 +259,21 @@ module Bronze::Rails::Resources
           end # each
         end. # tap
         to_h
+
+      parent_definition = resource_definition.parent_resources.last
+      if parent_definition
+        filter['matching'][parent_definition.foreign_key.to_s] =
+          params[parent_definition.foreign_key]
+      end # if
+
+      filter
     end # method filter_params
+    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/MethodLength
+
+    def null_operation
+      Bronze::Operations::NullOperation.new
+    end # method null_operation
 
     def permitted_attributes
       []
@@ -246,6 +288,10 @@ module Bronze::Rails::Resources
 
       coerce_attributes(resource_class, hsh)
     end # method resource_params
+
+    def resources
+      @resources ||= {}
+    end # method resources
 
     def responder
       @responder ||= Bronze::Rails::Responders::RenderViewResponder.new(self)
