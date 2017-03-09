@@ -190,6 +190,32 @@ RSpec.describe ChaptersController, :type => :controller do
     end # describe
   end # describe
 
+  describe '#destroy' do
+    include_context 'when the collection has many chapters'
+
+    let(:book)       { books_collection.to_a.first }
+    let(:book_id)    { book.id }
+    let(:chapter) do
+      chapters_collection.matching(:book_id => book.id).to_a.first
+    end # let
+    let(:chapter_id) { chapter.id }
+    let(:params)     { super().merge :book_id => book_id, :id => chapter_id }
+
+    def perform_action
+      delete :destroy, :headers => headers, :params => params
+    end # method perform_action
+
+    include_examples 'should require a book id'
+
+    include_examples 'should require a chapter id'
+
+    it 'should destroy the book' do
+      expect { perform_action }.to change(chapters_collection, :count).by(-1)
+
+      expect(chapters_collection.find chapter.id).to be nil
+    end # it
+  end # describe
+
   describe '#edit' do
     include_context 'when the collection has many chapters'
 
