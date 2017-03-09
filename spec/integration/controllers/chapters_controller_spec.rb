@@ -221,4 +221,45 @@ RSpec.describe ChaptersController, :type => :controller do
         } # end include_examples
     end # wrap_context
   end # describe
+
+  describe '#new' do
+    include_context 'when the collection has many books'
+
+    let(:book)       { books.first }
+    let(:book_id)    { book.id }
+    let(:params)     { super().merge :book_id => book_id }
+    let(:attributes) { {} }
+    let(:params) do
+      super().merge :book_id => book_id, :chapter => attributes
+    end # let
+    let(:expected_attributes) do
+      hsh = {}
+
+      Spec::Chapter.attributes.keys.each do |attr_name|
+        next if attr_name == :id
+
+        hsh[attr_name] = nil
+      end # each
+
+      hsh[:book_id] = book.id
+
+      hsh
+    end # let
+
+    def perform_action
+      get :new, :headers => headers, :params => params
+    end # method perform_action
+
+    include_examples 'should render template',
+      'chapters/new',
+      lambda { |options|
+        expect(options[:locals][:book]).to be == book
+
+        chapter = options[:locals][:chapter]
+        chapter_attributes = chapter.attributes.tap { |hsh| hsh.delete :id }
+
+        expect(chapter).to be_a Spec::Chapter
+        expect(chapter_attributes).to be == expected_attributes
+      } # end include_examples
+  end # describe
 end # describe
