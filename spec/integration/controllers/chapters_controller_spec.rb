@@ -78,6 +78,16 @@ RSpec.describe ChaptersController, :type => :controller do
     end # describe
   end # shared_examples
 
+  shared_examples 'should require a chapter id' do
+    describe 'when the chapter id is invalid' do
+      let(:chapter_id) { Spec::Chapter.new.id }
+
+      include_examples 'should redirect to',
+        ->() { book_chapters_path(book) },
+        :as => 'book_chapters_path'
+    end # describe
+  end # shared_examples
+
   let(:books_collection) do
     transform =
       Bronze::Entities::Transforms::EntityTransform.new(Spec::Book)
@@ -260,6 +270,36 @@ RSpec.describe ChaptersController, :type => :controller do
 
         expect(chapter).to be_a Spec::Chapter
         expect(chapter_attributes).to be == expected_attributes
+      } # end include_examples
+  end # describe
+
+  describe '#show' do
+    include_context 'when the collection has many chapters'
+
+    let(:book)       { books_collection.to_a.first }
+    let(:book_id)    { book.id }
+    let(:chapter) do
+      chapters_collection.matching(:book_id => book.id).to_a.first
+    end # let
+    let(:chapter_id) { chapter.id }
+    let(:params)     { super().merge :book_id => book_id, :id => chapter_id }
+
+    def perform_action
+      get :show, :headers => headers, :params => params
+    end # method perform_action
+
+    include_examples 'should require a book id'
+
+    include_examples 'should require a chapter id'
+
+    include_examples 'should render template',
+      'chapters/show',
+      lambda { |options|
+        expect(options[:locals][:book]).to be == book
+
+        found_chapter = options[:locals][:chapter]
+
+        expect(found_chapter).to be == chapter
       } # end include_examples
   end # describe
 end # describe
