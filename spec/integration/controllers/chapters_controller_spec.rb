@@ -332,4 +332,95 @@ RSpec.describe ChaptersController, :type => :controller do
         expect(found_chapter).to be == chapter
       } # end include_examples
   end # describe
+
+  describe '#update' do
+    include_context 'when the collection has many chapters'
+
+    let(:book)       { books_collection.to_a.first }
+    let(:book_id)    { book.id }
+    let(:chapter) do
+      chapters_collection.matching(:book_id => book.id).to_a.first
+    end # let
+    let(:chapter_id) { chapter.id }
+    let(:params) do
+      super().merge(
+        :book_id => book_id,
+        :id      => chapter_id,
+        :chapter => update_attributes
+      ) # end params
+    end # let
+    let(:update_attributes) do
+      {}
+    end # let
+
+    def perform_action
+      patch :update, :headers => headers, :params => params
+    end # method perform_action
+
+    include_examples 'should require a book id'
+
+    include_examples 'should require a chapter id'
+
+    describe 'with invalid attributes' do
+      let(:update_attributes) do
+        { :title => '' }
+      end # let
+      let(:expected_attributes) do
+        chapter.attributes.merge(update_attributes).tap { |hsh| hsh.delete :id }
+      end # let
+      let(:expected_error) do
+        Bronze::Errors::Error.new(
+          [:chapter, :title],
+          Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
+          {}
+        ) # end error
+      end # let
+
+      include_examples 'should render template',
+        'chapters/edit',
+        { :status => :unprocessable_entity },
+        lambda { |options|
+          expect(options[:locals][:book]).to be == book
+
+          changed_chapter = options[:locals][:chapter]
+          chapter_attributes =
+            changed_chapter.attributes.tap { |hsh| hsh.delete :id }
+
+          expect(changed_chapter).to be_a Spec::Chapter
+          expect(changed_chapter.book).to be == book
+          expect(chapter_attributes).to be == expected_attributes
+
+          errors = options[:locals][:errors]
+          expect(errors).to be_a Bronze::Errors::Errors
+          expect(errors[:chapter][:title]).to include expected_error
+        } # end include_examples
+
+      it 'should not update the chapter' do
+        expect { perform_action }.
+          not_to change { chapters_collection.find(chapter.id).attributes }
+      end # it
+    end # describe
+
+    describe 'with valid attributes' do
+      let(:update_attributes) do
+        {
+          :title      => 'An Unexpected Party',
+          :word_count => 512
+        } # attributes
+      end # let
+      let(:expected_attributes) do
+        chapter.attributes.merge(update_attributes)
+      end # let
+
+      include_examples 'should redirect to',
+        ->() { book_chapter_path(book, chapter) },
+        :as => 'book_chapter_path'
+
+      it 'should update the chapter' do
+        expect { perform_action }.
+          to change { chapters_collection.find(chapter.id).attributes }.
+          to be == expected_attributes
+      end # it
+    end # describe
+  end # describe
 end # describe
