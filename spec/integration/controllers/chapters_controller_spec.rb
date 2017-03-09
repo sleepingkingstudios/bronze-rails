@@ -190,6 +190,36 @@ RSpec.describe ChaptersController, :type => :controller do
     end # describe
   end # describe
 
+  describe '#edit' do
+    include_context 'when the collection has many chapters'
+
+    let(:book)       { books_collection.to_a.first }
+    let(:book_id)    { book.id }
+    let(:chapter) do
+      chapters_collection.matching(:book_id => book.id).to_a.first
+    end # let
+    let(:chapter_id) { chapter.id }
+    let(:params)     { super().merge :book_id => book_id, :id => chapter_id }
+
+    def perform_action
+      get :edit, :headers => headers, :params => params
+    end # method perform_action
+
+    include_examples 'should require a book id'
+
+    include_examples 'should require a chapter id'
+
+    include_examples 'should render template',
+      'chapters/edit',
+      lambda { |options|
+        expect(options[:locals][:book]).to be == book
+
+        found_chapter = options[:locals][:chapter]
+
+        expect(found_chapter).to be == chapter
+      } # end include_examples
+  end # describe
+
   describe '#index' do
     include_context 'when the collection has many books'
 
