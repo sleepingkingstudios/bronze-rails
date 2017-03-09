@@ -56,6 +56,10 @@ Style/HashSyntax:
 Style/MethodDefParentheses:
   EnforcedStyle: require_no_parentheses_except_multiline
 
+Style/MultilineBlockChain:
+  # Incompatible with operation then/else syntax.
+  Enabled: false
+
 Style/NestedParenthesizedCalls:
   # This cop is excessively strict, especially in cases where the nested method
   # call has only one argument, e.g. outer_method(inner_method arg). Adding the

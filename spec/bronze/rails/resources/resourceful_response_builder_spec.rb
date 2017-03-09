@@ -322,6 +322,12 @@ RSpec.describe Bronze::Rails::Resources::ResourcefulResponseBuilder do
     end # describe
   end # describe
 
+  describe '#resource_definition' do
+    include_examples 'should have reader',
+      :resource_definition,
+      ->() { resource_definition }
+  end # describe
+
   describe '#resource_path' do
     let(:book)     { Spec::Book.new }
     let(:expected) { "/books/#{book.id}" }

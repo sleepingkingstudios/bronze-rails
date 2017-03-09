@@ -1,4 +1,4 @@
-# spec/support/copy_rails_files.rb
+# spec/support/scripts/copy_rails_files.rb
 
 require 'fileutils'
 
@@ -23,7 +23,7 @@ module Spec
         source_name.dup.tap { |str| str[0..shared_path.length] = '' }
       target_name = File.join(rails_path, short_name)
 
-      puts "  copying #{short_name} from #{source_name} to #{target_name}"
+      puts "  copying #{short_name} to #{target_name}"
 
       FileUtils.cp source_name, target_name
     end # method copy_files
@@ -36,7 +36,10 @@ module Spec
     end # method copy_files
 
     def file_patterns
-      ['config/routes.rb']
+      [
+        'config/routes.rb',
+        'app/controllers/**/*.rb'
+      ] # end patterns
     end # method file_patterns
 
     def shared_path

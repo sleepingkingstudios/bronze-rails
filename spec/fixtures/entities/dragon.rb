@@ -1,4 +1,4 @@
-# spec/fixtures/entities/book.rb
+# spec/fixtures/entities/dragon.rb
 
 require 'bronze/entities/contracts/entity_contract'
 require 'bronze/entities/entity'
@@ -6,19 +6,18 @@ require 'bronze/entities/entity'
 require 'bronze/rails/entity'
 
 module Spec
-  class Book < Bronze::Entities::Entity
+  class Dragon < Bronze::Entities::Entity
     include Bronze::Rails::Entity
 
-    attribute :title,      String
-    attribute :series,     String,  :allow_nil => true
-    attribute :page_count, Integer, :allow_nil => true
+    attribute :name,     String
+    attribute :wingspan, Integer
 
-    has_many :chapters, :class_name => 'Spec::Chapter'
+    belongs_to :lair, :class_name => 'Spec::Dungeon'
 
     class Contract < Bronze::Entities::Contracts::EntityContract
       validate :attribute_types => true
 
-      validate :title, :present => true
+      validate :name, :present => true
     end # class
   end # class
 end # module

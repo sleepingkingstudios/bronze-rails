@@ -35,6 +35,9 @@ module Bronze::Rails::Resources
       :resource_name,
       :to => :@resource_definition
 
+    # @return [Resource] The definition of the primary resource.
+    attr_reader :resource_definition
+
     # Builds response options for a missing resource.
     #
     # @return [Hash] The response options
