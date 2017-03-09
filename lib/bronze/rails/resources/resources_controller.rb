@@ -58,6 +58,11 @@ module Bronze::Rails::Resources
       responder.call(build_response create_resource)
     end # method create
 
+    # DELETE /path/to/resources/:id
+    def destroy
+      responder.call(build_response destroy_resource)
+    end # method destroy
+
     # GET /path/to/resources/:id/edit
     def edit
       responder.call(build_response edit_resource)
@@ -94,6 +99,10 @@ module Bronze::Rails::Resources
         then { |operation| validate_one(operation.resource) }.
         then { |operation| insert_one(resource_class, operation.resource) }
     end # method create_resource
+
+    def destroy_resource
+      destroy_one resource_class, primary_resource
+    end # method destroy_resource
 
     def edit_resource
       find_one resource_class, params[:id]
@@ -149,6 +158,13 @@ module Bronze::Rails::Resources
         resource_class
       ).execute(resource_params)
     end # method build_one
+
+    def destroy_one resource_class, resource
+      Patina::Operations::Entities::DestroyOneOperation.new(
+        repository,
+        resource_class
+      ).execute(resource)
+    end # method destroy_one
 
     def find_matching resource_class, filter_params
       Patina::Operations::Entities::FindMatchingOperation.new(

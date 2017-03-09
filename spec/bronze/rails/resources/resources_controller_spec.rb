@@ -121,6 +121,14 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     include_examples 'should delegate to the operation', :create
   end # describe
 
+  describe '#destroy' do
+    include_context 'when the resource is defined'
+
+    it { expect(instance).to respond_to(:destroy).with(0).arguments }
+
+    include_examples 'should delegate to the operation', :destroy
+  end # describe
+
   describe '#edit' do
     include_context 'when the resource is defined'
 
@@ -206,6 +214,32 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         and_return(insert_operation)
 
       expect(instance.send :create_resource).to be insert_operation
+    end # it
+  end # describe
+
+  describe '#destroy_resource' do
+    include_context 'when the resource is defined'
+
+    let(:resource)  { Spec::Book.new }
+    let(:operation) { Spec::Operation.new(:resources => [resource]).execute }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:destroy_resource)
+
+      expect(instance).
+        to respond_to(:destroy_resource, true).
+        with(0).arguments
+    end # it
+
+    it 'should destroy the resource' do
+      allow(instance).to receive(:primary_resource).and_return(resource)
+
+      expect(instance).
+        to receive(:destroy_one).
+        with(resource_class, resource).
+        and_return(operation)
+
+      expect(instance.send :destroy_resource).to be operation
     end # it
   end # describe
 
@@ -328,7 +362,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
 
     it 'should assign, validate and update the resource' do
-      instance.send :primary_resource=, resource
+      allow(instance).to receive(:primary_resource).and_return(resource)
 
       expect(instance).
         to receive(:assign_one).
@@ -476,6 +510,27 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
       expect(operation).
         to be_a Patina::Operations::Entities::BuildOneOperation
+      expect(operation.resource_class).to be resource_class
+      expect(operation.called?).to be true
+    end # it
+  end # describe
+
+  describe '#destroy_one' do
+    let(:resource) { Spec::Book.new }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:destroy_one)
+
+      expect(instance).
+        to respond_to(:destroy_one, true).
+        with(2).arguments
+    end # it
+
+    it 'should return an operation' do
+      operation = instance.send :destroy_one, resource_class, resource
+
+      expect(operation).
+        to be_a Patina::Operations::Entities::DestroyOneOperation
       expect(operation.resource_class).to be resource_class
       expect(operation.called?).to be true
     end # it
