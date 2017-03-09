@@ -8,7 +8,7 @@ RSpec.describe BooksController, :type => :controller do
   include Spec::Examples::Integration::ControllerExamples
 
   shared_context 'when the collection has many books' do
-    let(:attributes) do
+    let(:books_attributes) do
       [
         {
           :title  => 'The Fellowship of the Ring',
@@ -37,7 +37,7 @@ RSpec.describe BooksController, :type => :controller do
       ] # end titles
     end # let
     let!(:books) do
-      attributes.map do |hsh|
+      books_attributes.map do |hsh|
         book = Spec::Book.new hsh
 
         books_collection.insert book

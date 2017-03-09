@@ -916,6 +916,37 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         it { expect(instance.send :resource_params).to be == expected }
       end # wrap_context
     end # context
+
+    wrap_context 'when the resource has a parent resource' do
+      let(:book)     { Spec::Book.new }
+      let(:expected) { { 'book' => book } }
+
+      before(:example) do
+        instance.send(:resources).update(:book => book)
+      end # before example
+
+      it { expect(instance.send :resource_params).to be == expected }
+
+      context 'when the resource params have attributes' do
+        let(:attributes) do
+          { :title => 'An Unexpected Party' }
+        end # let
+        let(:params) { super().merge :chapter => attributes }
+
+        it { expect(instance.send :resource_params).to be == expected }
+
+        wrap_context 'when all attributes are permitted' do
+          let(:expected) do
+            {
+              'title' => attributes[:title],
+              'book'  => book
+            } # end expected attributes
+          end # let
+
+          it { expect(instance.send :resource_params).to be == expected }
+        end # wrap_context
+      end # context
+    end # wrap_context
   end # describe
 
   describe '#resources' do

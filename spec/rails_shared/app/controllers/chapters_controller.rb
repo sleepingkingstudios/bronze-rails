@@ -21,6 +21,6 @@ class ChaptersController < ApplicationController
   private
 
   def permitted_attributes
-    %w(title)
+    %w(title word_count)
   end # method permitted_attributes
 end # class

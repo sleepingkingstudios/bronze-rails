@@ -226,7 +226,7 @@ module Bronze::Rails::Resources
 
       parent_definition = resource_definition.parent_resources.last
       if parent_definition
-        hsh[:resources][parent_definition.singular_association_key] =
+        (hsh[:resources] ||= {})[parent_definition.singular_association_key] =
           resources[parent_definition.resource_key]
       end # if
 
@@ -279,6 +279,8 @@ module Bronze::Rails::Resources
       []
     end # method permitted_attributes
 
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/MethodLength
     def resource_params
       hsh =
         params.
@@ -286,8 +288,18 @@ module Bronze::Rails::Resources
         fetch(resource_name, {}).
         to_h
 
-      coerce_attributes(resource_class, hsh)
+      hsh = coerce_attributes(resource_class, hsh)
+
+      parent_definition = resource_definition.parent_resources.last
+      if parent_definition
+        hsh[parent_definition.singular_association_key] =
+          resources[parent_definition.resource_key]
+      end # if
+
+      hsh
     end # method resource_params
+    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/MethodLength
 
     def resources
       @resources ||= {}
@@ -301,7 +313,8 @@ module Bronze::Rails::Resources
       resource_definition ||= self.resource_definition
 
       Bronze::Rails::Resources::ResourcefulResponseBuilder.new(
-        resource_definition
+        resource_definition,
+        resources
       ) # end response builder
     end # method response_builder
   end # module
