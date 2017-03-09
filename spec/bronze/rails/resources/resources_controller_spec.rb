@@ -710,6 +710,68 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
   ###                                 Helpers                                ###
   ##############################################################################
 
+  describe '#assign_associations' do
+    include_context 'when the resource is defined'
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:assign_associations)
+
+      expect(instance).
+        to respond_to(:assign_associations, true).
+        with_unlimited_arguments
+    end # it
+
+    describe 'with one primary resource' do
+      let(:primary_resource) { Spec::Book.new }
+
+      it 'should not change the resource' do
+        expect { instance.send :assign_associations, primary_resource }.
+          not_to change { primary_resource }
+      end # it
+    end # describe
+
+    describe 'with many primary resources' do
+      let(:primary_resources) { Array.new(3) { Spec::Book.new } }
+
+      it 'should not change the resource' do
+        expect { instance.send(:assign_associations, *primary_resources) }.
+          not_to change { primary_resources }
+      end # it
+    end # describe
+
+    wrap_context 'when the resource has a parent resource' do
+      let(:parent_resource) { Spec::Book.new }
+
+      before(:example) do
+        allow(instance).
+          to receive(:resources).
+          and_return(:book => parent_resource)
+      end # before example
+
+      describe 'with one primary resource' do
+        let(:primary_resource) { Spec::Chapter.new }
+
+        it 'should assign the associations to the primary resource' do
+          instance.send :assign_associations, primary_resource
+
+          expect(primary_resource.book).to be parent_resource
+        end # it
+      end # describe
+
+      describe 'with many primary resources' do
+        let(:primary_resources) { Array.new(3) { Spec::Chapter.new } }
+
+        it 'should assign the associations to the primary resources' do
+          instance.send(:assign_associations, *primary_resources)
+
+          primary_resources.each do |primary_resource|
+            expect(primary_resource.book).to be parent_resource
+          end # each
+        end # it
+      end # describe
+    end # wrap_context
+  end # describe
+
   describe '#build_response' do
     include_context 'when the resource is defined'
 

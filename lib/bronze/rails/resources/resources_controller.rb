@@ -109,11 +109,13 @@ module Bronze::Rails::Resources
     end # method destroy_resource
 
     def edit_resource
-      find_one resource_class, params[:id]
+      find_one(resource_class, params[:id]).
+        then { |operation| assign_associations(operation.resource) }
     end # method edit_resource
 
     def index_resources
-      find_matching resource_class, filter_params
+      find_matching(resource_class, filter_params).
+        then { |operation| assign_associations(*operation.resources) }
     end # method index_resources
 
     def new_resource
@@ -121,7 +123,8 @@ module Bronze::Rails::Resources
     end # method new_resource
 
     def show_resource
-      find_one resource_class, params[:id]
+      find_one(resource_class, params[:id]).
+        then { |operation| assign_associations(operation.resource) }
     end # method show_resource
 
     def update_resource
@@ -221,6 +224,19 @@ module Bronze::Rails::Resources
 
     attr_accessor :primary_resource
 
+    def assign_associations *primary_resources
+      parent_definition = resource_definition.parent_resources.last
+
+      Array(primary_resources).each do |primary_resource|
+        next unless parent_definition
+
+        primary_resource.send(
+          :"#{parent_definition.singular_association_name}=",
+          resources[parent_definition.resource_key]
+        ) # end set association
+      end # each
+    end # method assign_associations
+
     def build_response operation
       hsh = response_builder.build_response operation, :action => action_name
 
@@ -263,7 +279,7 @@ module Bronze::Rails::Resources
       parent_definition = resource_definition.parent_resources.last
       if parent_definition
         filter['matching'][parent_definition.foreign_key.to_s] =
-          params[parent_definition.foreign_key]
+          params[parent_definition.primary_key]
       end # if
 
       filter

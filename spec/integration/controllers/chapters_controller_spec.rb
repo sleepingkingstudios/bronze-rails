@@ -243,6 +243,7 @@ RSpec.describe ChaptersController, :type => :controller do
         found_chapter = options[:locals][:chapter]
 
         expect(found_chapter).to be == chapter
+        expect(found_chapter.book).to be == book
       } # end include_examples
   end # describe
 
@@ -284,6 +285,10 @@ RSpec.describe ChaptersController, :type => :controller do
 
           expect(matching_chapters).to be_a Array
           expect(matching_chapters).to contain_exactly(*expected)
+
+          matching_chapters.each do |matching_chapter|
+            expect(matching_chapter.book).to be == book
+          end # each
         } # end include_examples
     end # wrap_context
   end # describe
@@ -356,6 +361,7 @@ RSpec.describe ChaptersController, :type => :controller do
         found_chapter = options[:locals][:chapter]
 
         expect(found_chapter).to be == chapter
+        expect(found_chapter.book).to be == book
       } # end include_examples
   end # describe
 
