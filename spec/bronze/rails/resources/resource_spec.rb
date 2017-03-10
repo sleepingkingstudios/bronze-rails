@@ -304,6 +304,12 @@ RSpec.describe Bronze::Rails::Resources::Resource do
   describe '#plural_resource_key' do
     include_examples 'should have reader', :plural_resource_key, :books
 
+    context 'when options[:resource_key] is set' do
+      let(:resource_options) { super().merge :resource_key => :tome }
+
+      it { expect(instance.plural_resource_key).to be == :tomes }
+    end # context
+
     wrap_context 'when the resource class has a compound name' do
       it 'should return the plural resource key' do
         expect(instance.plural_resource_key).to be == :archived_periodicals
@@ -355,6 +361,12 @@ RSpec.describe Bronze::Rails::Resources::Resource do
   describe '#resource_key' do
     include_examples 'should have reader', :resource_key, :book
 
+    context 'when options[:resource_key] is set' do
+      let(:resource_options) { super().merge :resource_key => :tome }
+
+      it { expect(instance.resource_key).to be == :tome }
+    end # context
+
     wrap_context 'when the resource class has a compound name' do
       it 'should return the resource key' do
         expect(instance.resource_key).to be == :archived_periodical
@@ -366,6 +378,30 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     include_examples 'should have reader',
       :resource_name,
       ->() { be == 'book' }
+
+    context 'when options[:association_name] is a plural string' do
+      let(:resource_options) { super().merge :resource_name => 'tomes' }
+
+      it { expect(instance.resource_name).to be == 'tome' }
+    end # context
+
+    context 'when options[:association_name] is a plural symbol' do
+      let(:resource_options) { super().merge :resource_name => :tomes }
+
+      it { expect(instance.resource_name).to be == 'tome' }
+    end # context
+
+    context 'when options[:association_name] is a singular string' do
+      let(:resource_options) { super().merge :resource_name => 'tome' }
+
+      it { expect(instance.resource_name).to be == 'tome' }
+    end # context
+
+    context 'when options[:association_name] is a singular symbol' do
+      let(:resource_options) { super().merge :resource_name => :tome }
+
+      it { expect(instance.resource_name).to be == 'tome' }
+    end # context
 
     wrap_context 'when the resource class has a compound name' do
       it 'should return the resource name' do

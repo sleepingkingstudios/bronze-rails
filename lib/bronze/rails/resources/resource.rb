@@ -97,7 +97,8 @@ module Bronze::Rails::Resources
     #
     # @return [Symbol] The plural resource name.
     def plural_resource_key
-      plural_resource_name.intern
+      @plural_resource_key ||=
+        tools.string.pluralize(resource_key.to_s).intern
     end # method plural_resource_key
 
     # The short plural name of the resource in underscore-separated form.
@@ -131,7 +132,7 @@ module Bronze::Rails::Resources
     #
     # @return [Symbol] The resource name.
     def resource_key
-      resource_name.intern
+      @resource_options.fetch(:resource_key, resource_name).intern
     end # method resource_key
 
     # The short name of the resource in underscore-separated form.
@@ -139,7 +140,15 @@ module Bronze::Rails::Resources
     # @return [String] The resource name.
     def resource_name
       @resource_name ||=
-        tools.string.underscore(@resource_class.name.split('::').last)
+        begin
+          name =
+            @resource_options.fetch(
+              :resource_name,
+              tools.string.underscore(@resource_class.name.split('::').last)
+            ) # end fetch
+
+          tools.string.singularize(name.to_s)
+        end # resource_name
     end # method resource_name
 
     # @return [String] The relative path to the resource.
