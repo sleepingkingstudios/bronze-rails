@@ -51,6 +51,16 @@ module Bronze::Rails::Resources
       @collection_name ||= tools.string.pluralize(qualified_resource_name)
     end # method collection_name
 
+    def controller_name
+      @controller_name ||=
+        begin
+          name = @resource_options.fetch(:controller_name, '')
+          name = name.empty? ? plural_resource_name : name
+          name = tools.string.underscore(name)
+          name.sub(/_controller\z/, '')
+        end # controller_name
+    end # method controller_name
+
     # Returns the default path of the template for the edit action.
     #
     # @return [String] The template path.
@@ -197,7 +207,7 @@ module Bronze::Rails::Resources
     def template action
       @namespaces.
         reduce('') { |str, name| str << name << '/' } <<
-        plural_resource_name << '/' <<
+        controller_name << '/' <<
         action.to_s
     end # method template
 

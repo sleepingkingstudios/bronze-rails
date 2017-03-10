@@ -149,6 +149,50 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     end # wrap_context
   end # describe
 
+  describe '#controller_name' do
+    include_examples 'should have reader',
+      :controller_name,
+      ->() { be == 'books' }
+
+    context 'when options[:association_name] is a simple string' do
+      let(:resource_options) { super().merge :controller_name => 'tomes' }
+
+      it { expect(instance.controller_name).to be == 'tomes' }
+    end # context
+
+    context 'when options[:association_name] is an camelized compound string'\
+    do
+      let(:resource_options) { super().merge :controller_name => 'RareBooks' }
+
+      it { expect(instance.controller_name).to be == 'rare_books' }
+    end # context
+
+    context 'when options[:association_name] is an underscored compound string'\
+    do
+      let(:resource_options) { super().merge :controller_name => 'rare_books' }
+
+      it { expect(instance.controller_name).to be == 'rare_books' }
+    end # context
+
+    context 'when options[:association_name] is an camelized controller name'\
+    do
+      let(:resource_options) do
+        super().merge :controller_name => 'RareBooksController'
+      end # let
+
+      it { expect(instance.controller_name).to be == 'rare_books' }
+    end # context
+
+    context 'when options[:association_name] is an underscored controller name'\
+    do
+      let(:resource_options) do
+        super().merge :controller_name => 'rare_books_controller'
+      end # let
+
+      it { expect(instance.controller_name).to be == 'rare_books' }
+    end # context
+  end # describe
+
   describe '#edit_template' do
     include_examples 'should have reader',
       :edit_template,
@@ -617,6 +661,18 @@ RSpec.describe Bronze::Rails::Resources::Resource do
 
       it { expect(instance.template action).to be == "books/#{action}" }
     end # describe
+
+    context 'when options[:association_name] is set' do
+      let(:resource_options) { super().merge :controller_name => 'rare_books' }
+
+      describe 'with the name of an action' do
+        let(:action) { 'defenestrate' }
+
+        it 'should return the template path' do
+          expect(instance.template action).to be == "rare_books/#{action}"
+        end # it
+      end # describe
+    end # context
 
     wrap_context 'when the resource has a namespace' do
       describe 'with the name of an action' do
