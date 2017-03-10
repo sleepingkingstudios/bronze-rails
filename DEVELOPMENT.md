@@ -11,6 +11,9 @@
   - support API responses
 - ResourcesController
   - ::resource :only, :except, :api, :views - filter actions
+    - make excluded actions private?
+  - #operation_builder - support different types of operations
+    - ActiveRecordOperationBuilder?
 - Responders
   - RenderViewResponder: pass messages to flash
   - JsonResponder: builds a JSON api response

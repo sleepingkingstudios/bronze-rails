@@ -51,6 +51,16 @@ module Bronze::Rails::Resources
       @collection_name ||= tools.string.pluralize(qualified_resource_name)
     end # method collection_name
 
+    def controller_name
+      @controller_name ||=
+        begin
+          name = @resource_options.fetch(:controller_name, '')
+          name = name.empty? ? plural_resource_name : name
+          name = tools.string.underscore(name)
+          name.sub(/_controller\z/, '')
+        end # controller_name
+    end # method controller_name
+
     # Returns the default path of the template for the edit action.
     #
     # @return [String] The template path.
@@ -97,7 +107,8 @@ module Bronze::Rails::Resources
     #
     # @return [Symbol] The plural resource name.
     def plural_resource_key
-      plural_resource_name.intern
+      @plural_resource_key ||=
+        tools.string.pluralize(resource_key.to_s).intern
     end # method plural_resource_key
 
     # The short plural name of the resource in underscore-separated form.
@@ -131,7 +142,7 @@ module Bronze::Rails::Resources
     #
     # @return [Symbol] The resource name.
     def resource_key
-      resource_name.intern
+      @resource_options.fetch(:resource_key, resource_name).intern
     end # method resource_key
 
     # The short name of the resource in underscore-separated form.
@@ -139,7 +150,15 @@ module Bronze::Rails::Resources
     # @return [String] The resource name.
     def resource_name
       @resource_name ||=
-        tools.string.underscore(@resource_class.name.split('::').last)
+        begin
+          name =
+            @resource_options.fetch(
+              :resource_name,
+              tools.string.underscore(@resource_class.name.split('::').last)
+            ) # end fetch
+
+          tools.string.singularize(name.to_s)
+        end # resource_name
     end # method resource_name
 
     # @return [String] The relative path to the resource.
@@ -188,7 +207,7 @@ module Bronze::Rails::Resources
     def template action
       @namespaces.
         reduce('') { |str, name| str << name << '/' } <<
-        plural_resource_name << '/' <<
+        controller_name << '/' <<
         action.to_s
     end # method template
 

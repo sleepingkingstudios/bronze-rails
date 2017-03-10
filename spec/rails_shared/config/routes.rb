@@ -24,4 +24,6 @@ Rails.application.routes.draw do
   resources :dungeons do
     resources :dragons
   end # resources
+
+  resources :rare_books, :controller => 'very_rare_books'
 end # routes
