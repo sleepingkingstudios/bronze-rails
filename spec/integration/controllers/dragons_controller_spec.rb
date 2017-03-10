@@ -130,19 +130,6 @@ RSpec.describe DragonsController, :type => :controller do
     let(:params) do
       super().merge :dungeon_id => dungeon_id, :dragon => attributes
     end # let
-    let(:expected_attributes) do
-      hsh = {}
-
-      Spec::Dragon.attributes.keys.each do |attr_name|
-        next if attr_name == :id
-
-        hsh[attr_name] = nil
-      end # each
-
-      hsh[:lair_id] = dungeon.id
-
-      hsh
-    end # let
 
     def perform_action
       post :create, :headers => headers, :params => params
