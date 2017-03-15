@@ -1,13 +1,14 @@
 # Development
 
-- support for nested resources with :association_name
-  - integration specs: Dragon#lair => Dungeon
-    - Grendel the Green, Ambrose the Amber, Charles the Chartreuse
-    - Prideparadinoth the Polychromatic
+- I18nService
+  - Handles key-based fallback (specific to general)
 - ResourcefulResponseBuilder
   - implement messages
     - "Successfully actioned resource"
     - "Unable to action resource"
+    - defaults to
+      I18n.t('resources.:resource_name.:action_name.:status', :locale => locale)
+    - falls back to I18n.t('resources.:action_name.:status', :resource => resource_name, :locale => locale)
   - support API responses
 - ResourcesController
   - ::resource :only, :except, :api, :views - filter actions
@@ -20,5 +21,7 @@
 
 ## Future Work
 
+- I18nService
+  - Handles locale-based fallback (en-gb, en)
 - ResourcesController support for associations
   - Boss belongs to Dungeon, has one Enforcer, has many Minions
