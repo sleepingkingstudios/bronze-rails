@@ -38,7 +38,8 @@ module Spec
     def file_patterns
       [
         'config/routes.rb',
-        'app/controllers/**/*.rb'
+        'app/controllers/**/*.rb',
+        'app/views/**/*.erb'
       ] # end patterns
     end # method file_patterns
 

@@ -19,7 +19,10 @@ Gemfile.lock
 
 # Ignore files copied to Rails test installs.
 /spec/rails_*/config/routes.rb
-!/spec/rails_shared/config/routes.rb
 /spec/rails_*/app/controllers/**/*_controller.rb
-!/spec/rails_shared/app/controllers/*_controller.rb
 !/spec/rails_*/app/controllers/application_controller.rb
+/spec/rails_*/app/views/**/*.erb
+
+!/spec/rails_shared/config/routes.rb
+!/spec/rails_shared/app/controllers/*_controller.rb
+!/spec/rails_shared/app/views/**/*.erb
