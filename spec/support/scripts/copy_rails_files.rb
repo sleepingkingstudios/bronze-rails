@@ -25,6 +25,7 @@ module Spec
 
       puts "  copying #{short_name} to #{target_name}"
 
+      FileUtils.mkdir_p File.dirname(target_name)
       FileUtils.cp source_name, target_name
     end # method copy_files
 
