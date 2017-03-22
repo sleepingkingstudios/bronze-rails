@@ -59,37 +59,37 @@ module Bronze::Rails::Resources
 
     # POST /path/to/resources
     def create
-      responder.call(build_response create_resource)
+      build_responder.call(create_resource, :action => :create)
     end # method create
 
     # DELETE /path/to/resources/:id
     def destroy
-      responder.call(build_response destroy_resource)
+      build_responder.call(destroy_resource, :action => :destroy)
     end # method destroy
 
     # GET /path/to/resources/:id/edit
     def edit
-      responder.call(build_response edit_resource)
+      build_responder.call(edit_resource, :action => :edit)
     end # method edit
 
     # GET /path/to/resources
     def index
-      responder.call(build_response index_resources)
+      build_responder.call(index_resources, :action => :index)
     end # method index
 
     # GET /path/to/resources/new
     def new
-      responder.call(build_response new_resource)
+      build_responder.call(new_resource, :action => :new)
     end # method new
 
     # GET /path/to/resources/:id
     def show
-      responder.call(build_response show_resource)
+      build_responder.call(show_resource, :action => :show)
     end # method show
 
     # PATCH /path/to/resources/:id
     def update
-      responder.call(build_response update_resource)
+      build_responder.call(update_resource, :action => :update)
     end # method update
 
     private
@@ -140,9 +140,9 @@ module Bronze::Rails::Resources
     def require_one resource_definition, resource_id
       find_one(resource_definition.resource_class, resource_id).
         else do
-          builder = response_builder(resource_definition)
+          responder = build_responder(resource_definition)
 
-          responder.call(builder.build_not_found_response)
+          responder.call(:action => :not_found)
         end # else
     end # method require_one
 
@@ -237,17 +237,15 @@ module Bronze::Rails::Resources
       end # each
     end # method assign_associations
 
-    def build_response operation
-      hsh = response_builder.build_response operation, :action => action_name
+    def build_responder resource_definition = nil
+      resource_definition ||= self.resource_definition
 
-      parent_definition = resource_definition.parent_resources.last
-      if parent_definition
-        (hsh[:resources] ||= {})[parent_definition.singular_association_key] =
-          resources[parent_definition.parent_key]
-      end # if
-
-      hsh
-    end # method build_response
+      Bronze::Rails::Responders::RenderViewResponder.new(
+        self,
+        resource_definition,
+        :resources => resources
+      ) # end responder
+    end # method build_responder
 
     def coerce_attributes resource_class, attributes
       attributes.each do |attr_name, value|
@@ -320,10 +318,6 @@ module Bronze::Rails::Resources
     def resources
       @resources ||= {}
     end # method resources
-
-    def responder
-      @responder ||= Bronze::Rails::Responders::RenderViewResponder.new(self)
-    end # method responder
 
     def response_builder resource_definition = nil
       resource_definition ||= self.resource_definition

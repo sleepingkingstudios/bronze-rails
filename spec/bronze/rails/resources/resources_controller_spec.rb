@@ -54,6 +54,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
     let(:action_name) { action_name }
     let(:operation)   { Spec::Operation.new.execute }
+    let(:responder)   { double('responder') }
     let(:response)    { double('response') }
 
     it "should delegate to the ##{operation_name} operation" do
@@ -63,13 +64,13 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         and_return(operation)
 
       expect(instance).
-        to receive(:build_response).
-        with(operation).
-        and_return(response)
+        to receive(:build_responder).
+        with(no_args).
+        and_return(responder)
 
-      expect(instance.send :responder).
+      expect(responder).
         to receive(:call).
-        with(response)
+        with(operation, :action => action_name)
 
       instance.send(action_name)
     end # it
@@ -772,52 +773,19 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # wrap_context
   end # describe
 
-  describe '#build_response' do
-    include_context 'when the resource is defined'
+  describe '#build_responder' do
+    it 'should define the private reader' do
+      expect(instance).not_to respond_to(:build_responder)
 
-    let(:action_name) { :index }
-    let(:operation)   { double('operation') }
-    let(:builder)     { instance.send :response_builder }
-    let(:response)    { { :resources => {} } }
-
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:build_response)
-
-      expect(instance).to respond_to(:build_response, true).with(1).argument
+      expect(instance).to respond_to(:build_responder, true).with(0).arguments
     end # it
 
-    it 'should call the response builder' do
-      allow(instance).to receive(:response_builder).and_return(builder)
+    it 'should be a responder instance' do
+      responder = instance.send :build_responder
 
-      expect(builder).
-        to receive(:build_response).
-        with(operation, :action => action_name).
-        and_return(response)
-
-      expect(instance.send :build_response, operation).to be response
+      expect(responder).to be_a Bronze::Rails::Responders::RenderViewResponder
+      expect(responder.render_context).to be instance
     end # it
-
-    wrap_context 'when the resource has a parent resource' do
-      let(:book) { Spec::Book.new }
-      let!(:expected) do
-        { :resources => { :book => book } }
-      end # let
-
-      before(:example) do
-        instance.send(:resources).update(:book => book)
-      end # before example
-
-      it 'should call the response builder' do
-        allow(instance).to receive(:response_builder).and_return(builder)
-
-        expect(builder).
-          to receive(:build_response).
-          with(operation, :action => action_name).
-          and_return(response)
-
-        expect(instance.send :build_response, operation).to be == expected
-      end # it
-    end # wrap_context
   end # describe
 
   describe '#filter_params' do
@@ -1019,21 +987,6 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
 
     it { expect(instance.send :resources).to be == {} }
-  end # describe
-
-  describe '#responder' do
-    it 'should define the private reader' do
-      expect(instance).not_to respond_to(:responder)
-
-      expect(instance).to respond_to(:responder, true).with(0).arguments
-    end # it
-
-    it 'should be a responder instance' do
-      responder = instance.send :responder
-
-      expect(responder).to be_a Bronze::Rails::Responders::RenderViewResponder
-      expect(responder.render_context).to be instance
-    end # it
   end # describe
 
   describe '#response_builder' do

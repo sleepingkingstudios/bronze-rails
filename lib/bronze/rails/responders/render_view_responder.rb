@@ -1,34 +1,73 @@
 # lib/bronze/rails/responders/render_view_responder.rb
 
 require 'bronze/rails/responders'
+require 'bronze/rails/services/routes_service'
 
 module Bronze::Rails::Responders
+  # rubocop:disable Metrics/ClassLength
+
   # Responder for the omakase Rails behavior, e.g. an application or action that
   # renders a Rails template or redirects to another page within the
   # application.
   class RenderViewResponder
     # @param render_context [Object] The object to which render and redirect_to
     #   calls are delegated.
-    def initialize render_context
-      @render_context = render_context
+    # @param resource_definition [Resource] The definition of the primary
+    #   resource.
+    def initialize render_context, resource_definition, options = {}
+      @render_context      = render_context
+      @resource_definition = resource_definition
+      @options             = options
     end # constructor
 
     # @return [Object] The object to which render and redirect_to calls are
     #   delegated.
     attr_reader :render_context
 
+    # @return [Resource] The definition of the primary resource.
+    attr_reader :resource_definition
+
     # Either renders the requested template or redirects to the requested path.
     #
-    # @param options [Hash] The parameters for the response.
-    def call options
-      if options.key?(:redirect_path)
-        redirect_to(options)
-      elsif options.key?(:template)
-        render_template(options)
-      end # if
+    # @param operation [Bronze::Operations::Operation] The operation performed
+    #   by the action, if any.
+    # @param action [String] The name of the performed action.
+    def call operation = nil, action:
+      if operation
+        status      = operation.success? ? 'success' : 'failure'
+        helper_name = "respond_to_#{action}_#{status}"
+      else
+        helper_name = "respond_to_#{action}"
+      end # if-else
+
+      send helper_name, operation
     end # method call
 
     private
+
+    def ancestors
+      resources = @options.fetch(:resources, {})
+
+      @resource_definition.parent_resources.map do |ancestor|
+        resources[ancestor.parent_key]
+      end # map
+    end # method ancestors
+
+    def build_associations_hash
+      resources = @options.fetch(:resources, {})
+      hsh       = {}
+
+      @resource_definition.parent_resources.each do |parent_resource|
+        hsh[parent_resource.singular_association_key] =
+          resources[parent_resource.parent_key]
+      end # each
+
+      hsh
+    end # method build_associations_hash
+
+    def build_errors operation
+      operation.errors
+    end # method build_errors
 
     def build_locals options
       locals = {}
@@ -42,14 +81,35 @@ module Bronze::Rails::Responders
       locals
     end # method build_locals
 
-    def redirect_to options
-      render_context.redirect_to(options.fetch :redirect_path)
-    end # method redirect_to
+    def build_resources_hash operation, many: false
+      build_associations_hash.
+        update(
+          if many
+            { @resource_definition.plural_resource_key => operation.resources }
+          else
+            { @resource_definition.resource_key => operation.resource }
+          end # if-else
+        ) # end update
+    end # method build_resources_hash
 
-    def render_template options
-      status   = options.fetch(:http_status, :ok)
-      template = options.fetch(:template)
-      locals   = build_locals options
+    def options_for_invalid_resource operation
+      {
+        :http_status => :unprocessable_entity,
+        :resources   => build_resources_hash(operation),
+        :errors      => build_errors(operation)
+      } # end options
+    end # method options_for_invalid_resource
+
+    def options_for_valid_resource operation
+      {
+        :resources   => build_resources_hash(operation),
+        :errors      => []
+      } # end options
+    end # method options_for_valid_resource
+
+    def render_template template, options
+      status = options.fetch(:http_status, :ok)
+      locals = build_locals options
 
       render_context.render(
         :status   => status,
@@ -57,5 +117,124 @@ module Bronze::Rails::Responders
         :locals   => locals
       ) # end render
     end # method render_template
+
+    def resource_path resource
+      @resource_definition.resource_path(*ancestors, resource)
+    end # method resource_path
+
+    def resources_path
+      @resource_definition.resources_path(*ancestors)
+    end # method resources_path
+
+    def respond_to_create_failure operation
+      options =
+        options_for_invalid_resource(operation).
+        update(
+          :locals => {
+            :form_action => resources_path,
+            :form_method => :post
+          } # end locals
+        ) # end update
+
+      render_template @resource_definition.new_template, options
+    end # method respond_to_create_failure
+
+    def respond_to_create_success operation
+      render_context.redirect_to(resource_path operation.resource)
+    end # method respond_to_create_success
+
+    def respond_to_destroy_failure _operation
+      render_context.redirect_to(resources_path)
+    end # method respond_to_destroy_failure
+
+    def respond_to_destroy_success _operation
+      render_context.redirect_to(resources_path)
+    end # method respond_to_destroy_success
+
+    def respond_to_edit_failure _operation
+      render_context.redirect_to(resources_path)
+    end # method respond_to_edit_failure
+
+    def respond_to_edit_success operation
+      options =
+        options_for_valid_resource(operation).
+        update(
+          :locals => {
+            :form_action => resource_path(operation.resource),
+            :form_method => :patch
+          } # end locals
+        ) # end update
+
+      render_template @resource_definition.edit_template, options
+    end # method respond_to_edit_success
+
+    def respond_to_index_failure _operation
+      parent        = @resource_definition.parent_resources.last
+      redirect_path =
+        if parent
+          parent.resources_path(*ancestors[0...-1])
+        else
+          Bronze::Rails::Services::RoutesService.instance.root_path
+        end # if-else
+
+      render_context.redirect_to(redirect_path)
+    end # method respond_to_index_failure
+
+    def respond_to_index_success operation
+      options =
+        { :resources => build_resources_hash(operation, :many => true) }
+
+      render_template @resource_definition.index_template, options
+    end # method respond_to_index_success
+
+    def respond_to_new_failure _operation
+      render_context.redirect_to(resources_path)
+    end # method respond_to_new_failure
+
+    def respond_to_new_success operation
+      options =
+        options_for_valid_resource(operation).
+        update(
+          :locals => {
+            :form_action => resources_path,
+            :form_method => :post
+          } # end locals
+        ) # end update
+
+      render_template @resource_definition.new_template, options
+    end # method respond_to_new_success
+
+    def respond_to_not_found _operation
+      render_context.redirect_to(resources_path)
+    end # method respond_to_not_found
+
+    def respond_to_show_failure _operation
+      render_context.redirect_to(resources_path)
+    end # method respond_to_show_failure
+
+    def respond_to_show_success operation
+      options = { :resources => build_resources_hash(operation) }
+
+      render_template @resource_definition.show_template, options
+    end # method respond_to_show_success
+
+    def respond_to_update_failure operation
+      options =
+        options_for_invalid_resource(operation).
+        update(
+          :locals => {
+            :form_action => resource_path(operation.resource),
+            :form_method => :patch
+          } # end locals
+        ) # end update
+
+      render_template @resource_definition.edit_template, options
+    end # method respond_to_update_failure
+
+    def respond_to_update_success operation
+      render_context.redirect_to(resource_path operation.resource)
+    end # method respond_to_update_success
   end # class
+
+  # rubocop:enable Metrics/ClassLength
 end # module
