@@ -8,7 +8,6 @@ require 'bronze/operations/null_operation'
 require 'patina/operations/entities'
 
 require 'bronze/rails/resources/resource'
-require 'bronze/rails/resources/resourceful_response_builder'
 require 'bronze/rails/responders/render_view_responder'
 
 # rubocop:disable Metrics/ModuleLength
