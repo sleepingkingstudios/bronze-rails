@@ -774,6 +774,8 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
   end # describe
 
   describe '#build_responder' do
+    include_context 'when the resource is defined'
+
     it 'should define the private reader' do
       expect(instance).not_to respond_to(:build_responder)
 
@@ -781,11 +783,44 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
 
     it 'should be a responder instance' do
+      expect(Bronze::Rails::Responders::RenderViewResponder).
+        to receive(:new).
+        with(
+          instance,
+          instance.resource_definition,
+          :resources      => instance.send(:resources),
+          :resource_names => instance.send(:resource_names)
+        ). # end arguments
+        and_call_original
+
       responder = instance.send :build_responder
 
       expect(responder).to be_a Bronze::Rails::Responders::RenderViewResponder
       expect(responder.render_context).to be instance
     end # it
+
+    describe 'with a resource definition' do
+      include_context 'when the resource has a parent resource'
+
+      it 'should be a responder instance' do
+        parent_definition = instance.resource_definition.parent_resources.first
+
+        expect(Bronze::Rails::Responders::RenderViewResponder).
+          to receive(:new).
+          with(
+            instance,
+            parent_definition,
+            :resources      => instance.send(:resources),
+            :resource_names => instance.send(:resource_names)
+          ). # end arguments
+          and_call_original
+
+        responder = instance.send :build_responder, parent_definition
+
+        expect(responder).to be_a Bronze::Rails::Responders::RenderViewResponder
+        expect(responder.render_context).to be instance
+      end # it
+    end # describe
   end # describe
 
   describe '#filter_params' do
@@ -979,6 +1014,16 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # wrap_context
   end # describe
 
+  describe '#resource_names' do
+    it 'should define the private reader' do
+      expect(instance).not_to respond_to(:resource_names)
+
+      expect(instance).to respond_to(:resource_names, true).with(0).arguments
+    end # it
+
+    it { expect(instance.send :resource_names).to be == [] }
+  end # describe
+
   describe '#resources' do
     it 'should define the private reader' do
       expect(instance).not_to respond_to(:resources)
@@ -987,40 +1032,5 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
 
     it { expect(instance.send :resources).to be == {} }
-  end # describe
-
-  describe '#response_builder' do
-    include_context 'when the resource is defined'
-
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:response_builder)
-
-      expect(instance).
-        to respond_to(:response_builder, true).
-        with(0..1).arguments
-    end # it
-
-    it 'should be a response builder instance' do
-      builder = instance.send :response_builder
-
-      expect(builder).
-        to be_a Bronze::Rails::Resources::ResourcefulResponseBuilder
-      expect(builder.resource_definition).
-        to be described_class.resource_definition
-    end # it
-
-    describe 'with a resource definition' do
-      let(:other_definition) do
-        Bronze::Rails::Resources::Resource.new Spec::Chapter, {}
-      end # let
-
-      it 'should be a response builder instance' do
-        builder = instance.send :response_builder, other_definition
-
-        expect(builder).
-          to be_a Bronze::Rails::Resources::ResourcefulResponseBuilder
-        expect(builder.resource_definition).to be other_definition
-      end # it
-    end # describe
   end # describe
 end # describe

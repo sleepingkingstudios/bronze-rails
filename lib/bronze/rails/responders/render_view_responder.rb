@@ -54,15 +54,18 @@ module Bronze::Rails::Responders
     end # method ancestors
 
     def build_associations_hash
-      resources = @options.fetch(:resources, {})
-      hsh       = {}
+      resources      = @options.fetch(:resources, {})
+      resource_names = @options.fetch(:resource_names, [])
 
       @resource_definition.parent_resources.each do |parent_resource|
-        hsh[parent_resource.singular_association_key] =
-          resources[parent_resource.parent_key]
+        resource_names << parent_resource.parent_key
       end # each
 
-      hsh
+      resource_names.each.with_object({}) do |resource_name, hsh|
+        name = resource_name.intern
+
+        hsh[name] = resources[name]
+      end # each
     end # method build_associations_hash
 
     def build_errors operation

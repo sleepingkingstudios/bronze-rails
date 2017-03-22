@@ -171,6 +171,51 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
         end # it
       end # describe
     end # wrap_context
+
+    describe 'when options[:resource_names] is set' do
+      let(:resource_names) { [:author, :chapters] }
+      let(:resources) do
+        super().
+          merge(
+            :author   => double('author'),
+            :chapters => Array.new(3) { Spec::Chapter.new }
+          ) # end merge
+      end # let
+      let(:instance_options) do
+        super().merge :resource_names => resource_names
+      end # let
+
+      it 'should wrap the resource' do
+        expect(instance.send :build_resources_hash, operation).
+          to be == {
+            :author   => resources[:author],
+            :chapters => resources[:chapters],
+            :book     => operation.resource
+          } # end resources
+      end # it
+
+      describe 'with :many => false' do
+        it 'should wrap the resource' do
+          expect(instance.send :build_resources_hash, operation).
+            to be == {
+              :author   => resources[:author],
+              :chapters => resources[:chapters],
+              :book     => operation.resource
+            } # end resources
+        end # it
+      end # describe
+
+      describe 'with :many => true' do
+        it 'should wrap the resources' do
+          expect(instance.send :build_resources_hash, operation, :many => true).
+            to be == {
+              :author   => resources[:author],
+              :chapters => resources[:chapters],
+              :books    => operation.resources
+            } # end resources
+        end # it
+      end # describe
+    end # describe
   end # describe
 
   describe '#call' do

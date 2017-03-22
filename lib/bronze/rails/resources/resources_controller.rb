@@ -53,7 +53,6 @@ module Bronze::Rails::Resources
 
     delegate \
       :resource_class,
-      :resource_name,
       :to        => :resource_definition,
       :allow_nil => true
 
@@ -243,7 +242,8 @@ module Bronze::Rails::Resources
       Bronze::Rails::Responders::RenderViewResponder.new(
         self,
         resource_definition,
-        :resources => resources
+        :resources      => resources,
+        :resource_names => resource_names
       ) # end responder
     end # method build_responder
 
@@ -293,9 +293,15 @@ module Bronze::Rails::Resources
       []
     end # method permitted_attributes
 
+    def resource_names
+      []
+    end # method resource_names
+
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/MethodLength
     def resource_params
+      resource_name = resource_definition.resource_name
+
       hsh =
         params.
         permit(resource_name => permitted_attributes).
@@ -318,15 +324,6 @@ module Bronze::Rails::Resources
     def resources
       @resources ||= {}
     end # method resources
-
-    def response_builder resource_definition = nil
-      resource_definition ||= self.resource_definition
-
-      Bronze::Rails::Resources::ResourcefulResponseBuilder.new(
-        resource_definition,
-        resources
-      ) # end response builder
-    end # method response_builder
   end # module
 end # module
 
