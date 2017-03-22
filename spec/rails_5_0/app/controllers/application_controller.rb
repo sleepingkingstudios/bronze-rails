@@ -2,7 +2,7 @@
 
 require 'patina/collections/simple/repository'
 
-class ApplicationController < ActionController::API
+class ApplicationController < ActionController::Base
   private
 
   def repository
