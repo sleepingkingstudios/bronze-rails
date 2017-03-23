@@ -91,11 +91,10 @@ RSpec.describe VeryRareBooksController, :type => :controller do
         hsh
       end # let
       let(:expected_error) do
-        Bronze::Errors::Error.new(
-          [:book, :title],
-          Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
-          {}
-        ) # end error
+        {
+          :type => Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
+          :path => [:book, :title]
+        } # end expected_error
       end # let
 
       include_examples 'should render template',
@@ -109,7 +108,7 @@ RSpec.describe VeryRareBooksController, :type => :controller do
           expect(book_attributes).to be == expected_attributes
 
           errors = options[:locals][:errors]
-          expect(errors).to be_a Bronze::Errors::Errors
+          expect(errors).to be_a Bronze::Errors
           expect(errors[:book][:title]).to include expected_error
         } # end include_examples
 
@@ -306,11 +305,10 @@ RSpec.describe VeryRareBooksController, :type => :controller do
           tap { |hsh| hsh.delete :id }
       end # let
       let(:expected_error) do
-        Bronze::Errors::Error.new(
-          [:book, :title],
-          Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
-          {}
-        ) # end error
+        {
+          :type => Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
+          :path => [:book, :title]
+        } # end expected_error
       end # let
 
       include_examples 'should render template',
@@ -324,7 +322,7 @@ RSpec.describe VeryRareBooksController, :type => :controller do
           expect(book_attributes).to be == expected_attributes
 
           errors = options[:locals][:errors]
-          expect(errors).to be_a Bronze::Errors::Errors
+          expect(errors).to be_a Bronze::Errors
           expect(errors[:book][:title]).to include expected_error
         } # end include_examples
 
