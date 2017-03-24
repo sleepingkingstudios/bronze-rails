@@ -2,50 +2,11 @@
 
 require 'rails_helper'
 
-require 'bronze/rails/resources/resource'
 require 'bronze/rails/responders/render_view_responder'
-
-require 'fixtures/entities/book'
-require 'fixtures/entities/chapter'
-require 'fixtures/entities/section'
+require 'bronze/rails/responders/responder_examples'
 
 RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
-  shared_context 'when the resource has a parent resource' do
-    let(:ancestors) do
-      [
-        {
-          :name  => :books,
-          :type  => :resource,
-          :class => Spec::Book
-        } # end books
-      ] # end ancestors
-    end # let
-    let(:resource_class) { Spec::Chapter }
-    let(:resource_options) do
-      super().merge :ancestors => ancestors
-    end # let
-  end # shared_context
-
-  shared_context 'when the resource has a grandparent and parent resource' do
-    let(:ancestors) do
-      [
-        {
-          :name  => :books,
-          :type  => :resource,
-          :class => Spec::Book
-        }, # end books
-        {
-          :name  => :chapters,
-          :type  => :resource,
-          :class => Spec::Chapter
-        } # end chapters
-      ] # end ancestors
-    end # let
-    let(:resource_class) { Spec::Section }
-    let(:resource_options) do
-      super().merge :ancestors => ancestors
-    end # let
-  end # shared_context
+  include Spec::Examples::ResponderExamples
 
   let(:render_context) do
     double('render_context', :render => nil, :redirect_to => nil)
@@ -64,6 +25,8 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
   describe '::new' do
     it { expect(described_class).to be_constructible.with(2..3).arguments }
   end # describe
+
+  include_examples 'should implement the Responder methods'
 
   describe '#build_errors' do
     shared_context 'with errors for one book' do
@@ -576,100 +539,5 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
     include_examples 'should have reader',
       :render_context,
       ->() { be == render_context }
-  end # describe
-
-  describe '#resource_definition' do
-    include_examples 'should have reader',
-      :resource_definition,
-      ->() { be == resource_definition }
-  end # describe
-
-  describe '#resource_path' do
-    let(:book)     { Spec::Book.new }
-    let(:expected) { "/books/#{book.id}" }
-
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:resource_path)
-
-      expect(instance).to respond_to(:resource_path, true).with(1).argument
-    end # it
-
-    it { expect(instance.send :resource_path, book).to be == expected }
-
-    wrap_context 'when the resource has a parent resource' do
-      let(:chapter) { Spec::Chapter.new }
-
-      it 'should raise an error' do
-        expect { instance.send :resource_path, chapter }.
-          to raise_error ActionController::UrlGenerationError
-      end # it
-
-      context 'when resources includes the parent resources' do
-        let(:resources) { super().merge :book => book }
-        let(:expected)  { "/books/#{book.id}/chapters/#{chapter.id}" }
-
-        it { expect(instance.send :resource_path, chapter).to be == expected }
-      end # context
-    end # wrap_context
-
-    wrap_context 'when the resource has a grandparent and parent resource' do
-      let(:section) { Spec::Section.new }
-
-      it 'should raise an error' do
-        expect { instance.send :resource_path, section }.
-          to raise_error ActionController::UrlGenerationError
-      end # it
-
-      context 'when resources includes the parent resources' do
-        let(:chapter)   { Spec::Chapter.new }
-        let(:resources) { super().merge :book => book, :chapter => chapter }
-        let(:expected) do
-          "/books/#{book.id}/chapters/#{chapter.id}/sections/#{section.id}"
-        end # let
-
-        it { expect(instance.send :resource_path, section).to be == expected }
-      end # context
-    end # wrap_context
-  end # describe
-
-  describe '#resources_path' do
-    it 'should define the private reader' do
-      expect(instance).not_to respond_to(:resources_path)
-
-      expect(instance).to respond_to(:resources_path, true).with(0).arguments
-    end # it
-
-    it { expect(instance.send :resources_path).to be == '/books' }
-
-    wrap_context 'when the resource has a parent resource' do
-      it 'should raise an error' do
-        expect { instance.send :resources_path }.
-          to raise_error ActionController::UrlGenerationError
-      end # it
-
-      context 'when resources includes the parent resources' do
-        let(:book)      { Spec::Book.new }
-        let(:resources) { super().merge :book => book }
-        let(:expected)  { "/books/#{book.id}/chapters" }
-
-        it { expect(instance.send :resources_path).to be == expected }
-      end # context
-    end # wrap_context
-
-    wrap_context 'when the resource has a grandparent and parent resource' do
-      it 'should raise an error' do
-        expect { instance.send :resources_path }.
-          to raise_error ActionController::UrlGenerationError
-      end # it
-
-      context 'when resources includes the parent resources' do
-        let(:book)      { Spec::Book.new }
-        let(:chapter)   { Spec::Chapter.new }
-        let(:resources) { super().merge :book => book, :chapter => chapter }
-        let(:expected)  { "/books/#{book.id}/chapters/#{chapter.id}/sections" }
-
-        it { expect(instance.send :resources_path).to be == expected }
-      end # context
-    end # wrap_context
   end # describe
 end # describe

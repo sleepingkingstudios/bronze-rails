@@ -1,8 +1,7 @@
 # lib/bronze/rails/responders/render_view_responder.rb
 
-require 'sleeping_king_studios/tools/toolbelt'
-
-require 'bronze/rails/responders'
+require 'bronze/rails/responders/responder'
+require 'bronze/rails/responders/responder_examples'
 require 'bronze/rails/services/routes_service'
 
 module Bronze::Rails::Responders
@@ -11,23 +10,20 @@ module Bronze::Rails::Responders
   # Responder for the omakase Rails behavior, e.g. an application or action that
   # renders a Rails template or redirects to another page within the
   # application.
-  class RenderViewResponder
+  class RenderViewResponder < Responder
     # @param render_context [Object] The object to which render and redirect_to
     #   calls are delegated.
     # @param resource_definition [Resource] The definition of the primary
     #   resource.
     def initialize render_context, resource_definition, options = {}
-      @render_context      = render_context
-      @resource_definition = resource_definition
-      @options             = options
+      @render_context = render_context
+
+      super resource_definition, options
     end # constructor
 
     # @return [Object] The object to which render and redirect_to calls are
     #   delegated.
     attr_reader :render_context
-
-    # @return [Resource] The definition of the primary resource.
-    attr_reader :resource_definition
 
     # Either renders the requested template or redirects to the requested path.
     #
@@ -46,14 +42,6 @@ module Bronze::Rails::Responders
     end # method call
 
     private
-
-    def ancestors
-      resources = @options.fetch(:resources, {})
-
-      @resource_definition.parent_resources.map do |ancestor|
-        resources[ancestor.parent_key]
-      end # map
-    end # method ancestors
 
     def build_associations_hash
       resources      = @options.fetch(:resources, {})
@@ -142,14 +130,6 @@ module Bronze::Rails::Responders
         :locals   => locals
       ) # end render
     end # method render_template
-
-    def resource_path resource
-      @resource_definition.resource_path(*ancestors, resource)
-    end # method resource_path
-
-    def resources_path
-      @resource_definition.resources_path(*ancestors)
-    end # method resources_path
 
     def respond_to_create_failure operation
       options =
@@ -259,10 +239,6 @@ module Bronze::Rails::Responders
     def respond_to_update_success operation
       render_context.redirect_to(resource_path operation.resource)
     end # method respond_to_update_success
-
-    def tools
-      SleepingKingStudios::Tools::Toolbelt.instance
-    end # method tools
   end # class
 
   # rubocop:enable Metrics/ClassLength
