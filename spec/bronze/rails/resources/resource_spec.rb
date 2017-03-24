@@ -193,6 +193,58 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     end # context
   end # describe
 
+  describe '#default_resource_key' do
+    include_examples 'should have reader', :default_resource_key, :book
+
+    context 'when options[:resource_key] is set' do
+      let(:resource_options) { super().merge :resource_key => :tome }
+
+      it { expect(instance.default_resource_key).to be == :book }
+    end # context
+
+    wrap_context 'when the resource class has a compound name' do
+      it 'should return the resource key' do
+        expect(instance.default_resource_key).to be == :archived_periodical
+      end # it
+    end # wrap_context
+  end # describe
+
+  describe '#default_resource_name' do
+    include_examples 'should have reader',
+      :default_resource_name,
+      ->() { be == 'book' }
+
+    context 'when options[:association_name] is a plural string' do
+      let(:resource_options) { super().merge :resource_name => 'tomes' }
+
+      it { expect(instance.default_resource_name).to be == 'book' }
+    end # context
+
+    context 'when options[:association_name] is a plural symbol' do
+      let(:resource_options) { super().merge :resource_name => :tomes }
+
+      it { expect(instance.default_resource_name).to be == 'book' }
+    end # context
+
+    context 'when options[:association_name] is a singular string' do
+      let(:resource_options) { super().merge :resource_name => 'tome' }
+
+      it { expect(instance.default_resource_name).to be == 'book' }
+    end # context
+
+    context 'when options[:association_name] is a singular symbol' do
+      let(:resource_options) { super().merge :resource_name => :tome }
+
+      it { expect(instance.default_resource_name).to be == 'book' }
+    end # context
+
+    wrap_context 'when the resource class has a compound name' do
+      it 'should return the resource name' do
+        expect(instance.default_resource_name).to be == 'archived_periodical'
+      end # it
+    end # wrap_context
+  end # describe
+
   describe '#edit_template' do
     include_examples 'should have reader',
       :edit_template,

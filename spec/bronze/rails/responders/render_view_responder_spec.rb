@@ -65,6 +65,91 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
     it { expect(described_class).to be_constructible.with(2..3).arguments }
   end # describe
 
+  describe '#build_errors' do
+    shared_context 'with errors for one book' do
+      before(:example) do
+        expected_errors[:book].add(:banned, :reasons => [:subversive])
+        expected_errors[:book][:title].add(:already_exists)
+        expected_errors[:book][:author].add(:not_found)
+      end # before example
+    end # shared_context
+
+    shared_context 'with errors for many books' do
+      before(:example) do
+        expected_errors[:books][0].add(:banned, :reasons => [:subversive])
+        expected_errors[:books][1][:title].add(:already_exists)
+        expected_errors[:books][2][:author].add(:not_found)
+      end # before example
+    end # shared_context
+
+    let(:expected_errors) { Bronze::Errors.new }
+    let(:operation)       { double('operation', :errors => expected_errors) }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:build_errors)
+
+      expect(instance).to respond_to(:build_errors, true).with(1).argument
+    end # it
+
+    it 'should return the errors' do
+      expect(instance.send :build_errors, operation).to be == expected_errors
+    end # it
+
+    wrap_context 'with errors for one book' do
+      it 'should return the errors' do
+        expect(instance.send :build_errors, operation).to be == expected_errors
+      end # it
+    end # wrap_context
+
+    wrap_context 'with errors for many books' do
+      it 'should return the errors' do
+        expect(instance.send :build_errors, operation).to be == expected_errors
+      end # it
+    end # wrap_context
+
+    context 'when the resource key is overriden' do
+      let(:resource_options) { super().merge :resource_key => :rare_book }
+
+      it 'should return the errors' do
+        expect(instance.send :build_errors, operation).to be == expected_errors
+      end # it
+
+      wrap_context 'with errors for one book' do
+        it 'should return the errors with the configured key' do
+          errors = instance.send :build_errors, operation
+
+          expected_errors.each do |error|
+            path    = error[:path]
+            path[0] = resource_definition.resource_key
+
+            expect(errors).to include(
+              :type   => error[:type],
+              :params => error[:params],
+              :path   => path
+            ) # end expect
+          end # error
+        end # it
+      end # wrap_context
+
+      wrap_context 'with errors for many books' do
+        it 'should return the errors with the configured key' do
+          errors = instance.send :build_errors, operation
+
+          expected_errors.each do |error|
+            path    = error[:path]
+            path[0] = resource_definition.plural_resource_key
+
+            expect(errors).to include(
+              :type   => error[:type],
+              :params => error[:params],
+              :path   => path
+            ) # end expect
+          end # error
+        end # it
+      end # wrap_context
+    end # context
+  end # describe
+
   describe '#build_resources_hash' do
     let(:operation) do
       double(

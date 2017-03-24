@@ -136,11 +136,10 @@ RSpec.describe ChaptersController, :type => :controller do
         hsh
       end # let
       let(:expected_error) do
-        Bronze::Errors::Error.new(
-          [:chapter, :title],
-          Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
-          {}
-        ) # end error
+        {
+          :type => Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
+          :path => [:chapter, :title]
+        } # end expected_error
       end # let
 
       include_examples 'should render template',
@@ -157,7 +156,7 @@ RSpec.describe ChaptersController, :type => :controller do
           expect(chapter_attributes).to be == expected_attributes
 
           errors = options[:locals][:errors]
-          expect(errors).to be_a Bronze::Errors::Errors
+          expect(errors).to be_a Bronze::Errors
           expect(errors[:chapter][:title]).to include expected_error
         } # end include_examples
 
@@ -404,11 +403,10 @@ RSpec.describe ChaptersController, :type => :controller do
         chapter.attributes.merge(update_attributes).tap { |hsh| hsh.delete :id }
       end # let
       let(:expected_error) do
-        Bronze::Errors::Error.new(
-          [:chapter, :title],
-          Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
-          {}
-        ) # end error
+        {
+          :type => Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
+          :path => [:chapter, :title]
+        } # end expected_error
       end # let
 
       include_examples 'should render template',
@@ -426,7 +424,7 @@ RSpec.describe ChaptersController, :type => :controller do
           expect(chapter_attributes).to be == expected_attributes
 
           errors = options[:locals][:errors]
-          expect(errors).to be_a Bronze::Errors::Errors
+          expect(errors).to be_a Bronze::Errors
           expect(errors[:chapter][:title]).to include expected_error
         } # end include_examples
 
