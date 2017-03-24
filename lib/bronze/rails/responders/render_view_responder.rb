@@ -1,5 +1,7 @@
 # lib/bronze/rails/responders/render_view_responder.rb
 
+require 'sleeping_king_studios/tools/toolbelt'
+
 require 'bronze/rails/responders'
 require 'bronze/rails/services/routes_service'
 
@@ -68,9 +70,29 @@ module Bronze::Rails::Responders
       end # each
     end # method build_associations_hash
 
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/MethodLength
     def build_errors operation
-      operation.errors
+      default_key = resource_definition.default_resource_key
+      plural_key  = tools.string.pluralize(default_key.to_s).intern
+
+      return operation.errors if resource_definition.resource_key == default_key
+
+      errors = operation.errors
+
+      if errors.key?(default_key)
+        errors[resource_definition.resource_key] = errors.delete(default_key)
+      end # if
+
+      if errors.key?(plural_key)
+        errors[resource_definition.plural_resource_key] =
+          errors.delete(plural_key)
+      end # if
+
+      errors
     end # method build_errors
+    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/MethodLength
 
     def build_locals options
       locals = {}
@@ -237,6 +259,10 @@ module Bronze::Rails::Responders
     def respond_to_update_success operation
       render_context.redirect_to(resource_path operation.resource)
     end # method respond_to_update_success
+
+    def tools
+      SleepingKingStudios::Tools::Toolbelt.instance
+    end # method tools
   end # class
 
   # rubocop:enable Metrics/ClassLength

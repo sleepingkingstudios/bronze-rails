@@ -51,6 +51,9 @@ module Bronze::Rails::Resources
       @collection_name ||= tools.string.pluralize(qualified_resource_name)
     end # method collection_name
 
+    # The name of the controller for the resource in underscored format.
+    #
+    # @return [String] The controller name.
     def controller_name
       @controller_name ||=
         begin
@@ -60,6 +63,19 @@ module Bronze::Rails::Resources
           name.sub(/_controller\z/, '')
         end # controller_name
     end # method controller_name
+
+    def default_resource_key
+      default_resource_name.intern
+    end # method default_resource_key
+
+    def default_resource_name
+      @default_resource_name ||=
+        begin
+          str = tools.string.underscore(@resource_class.name.split('::').last)
+
+          tools.string.singularize(str)
+        end # resource_name
+    end # method default_resource_name
 
     # Returns the default path of the template for the edit action.
     #

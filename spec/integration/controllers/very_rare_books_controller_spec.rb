@@ -93,7 +93,7 @@ RSpec.describe VeryRareBooksController, :type => :controller do
       let(:expected_error) do
         {
           :type => Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
-          :path => [:book, :title]
+          :path => [:first_edition, :title]
         } # end expected_error
       end # let
 
@@ -109,7 +109,7 @@ RSpec.describe VeryRareBooksController, :type => :controller do
 
           errors = options[:locals][:errors]
           expect(errors).to be_a Bronze::Errors
-          expect(errors[:book][:title]).to include expected_error
+          expect(errors[:first_edition][:title]).to include expected_error
         } # end include_examples
 
       it 'should not create a book' do
@@ -307,7 +307,7 @@ RSpec.describe VeryRareBooksController, :type => :controller do
       let(:expected_error) do
         {
           :type => Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
-          :path => [:book, :title]
+          :path => [:first_edition, :title]
         } # end expected_error
       end # let
 
@@ -323,7 +323,7 @@ RSpec.describe VeryRareBooksController, :type => :controller do
 
           errors = options[:locals][:errors]
           expect(errors).to be_a Bronze::Errors
-          expect(errors[:book][:title]).to include expected_error
+          expect(errors[:first_edition][:title]).to include expected_error
         } # end include_examples
 
       it 'should not update the book' do

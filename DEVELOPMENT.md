@@ -1,8 +1,6 @@
 # Development
 
-- I18nService
-  - Handles key-based fallback (specific to general)
-- ResourcefulResponseBuilder
+- MessageBuilder
   - implement messages
     - "Successfully actioned resource"
     - "Unable to action resource"
