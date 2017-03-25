@@ -53,7 +53,20 @@ module Spec::Examples
       end # let
     end # shared_context
 
+    shared_context 'when the locale is set' do
+      let(:locale)           { 'fr-FR' }
+      let(:instance_options) { super().merge :locale => locale }
+    end # shared_context
+
     shared_examples 'should implement the Responder methods' do
+      describe '#locale' do
+        it { expect(instance).to have_reader(:locale).with_value(nil) }
+
+        wrap_context 'when the locale is set' do
+          it { expect(instance.locale).to be == locale }
+        end # context
+      end # describe
+
       describe '#resource_definition' do
         include_examples 'should have reader',
           :resource_definition,

@@ -18,6 +18,12 @@ module Bronze::Rails::Responders
     # @return [Resource] The definition of the primary resource.
     attr_reader :resource_definition
 
+    # @return [String] The configured locale for i18n, or nil if no locale was
+    #   configured.
+    def locale
+      @options[:locale]
+    end # method locale
+
     private
 
     def ancestors
