@@ -5,12 +5,12 @@ require 'rails_helper'
 require 'bronze/rails/responders/render_view_responder'
 require 'bronze/rails/responders/responder_examples'
 
+require 'support/mocks/controller'
+
 RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
   include Spec::Examples::ResponderExamples
 
-  let(:render_context) do
-    double('render_context', :render => nil, :redirect_to => nil)
-  end # let
+  let(:render_context)   { Spec::Controller.new }
   let(:resource_class)   { Spec::Book }
   let(:resource_options) { {} }
   let(:resource_definition) do
@@ -332,6 +332,16 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
         :success?  => success
       ) # end operation
     end # let
+    let(:message) do
+      'This is a test of the emergency broadcast system. This is only a test.'
+    end # let
+
+    before(:example) do
+      allow(instance).
+        to receive(:build_message).
+        with(action, success ? :success : :failure).
+        and_return(message)
+    end # before example
 
     def perform_action
       instance.call(operation, :action => action)
@@ -348,9 +358,22 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       let(:action)    { :not_found }
       let(:operation) { nil }
 
+      before(:example) do
+        allow(instance).
+          to receive(:build_message).
+          with(action).
+          and_return(message)
+      end # before example
+
       include_examples 'should redirect to',
         ->() { resource_definition.resources_path },
         :as => 'resources path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :create and a failing operation' do
@@ -368,6 +391,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
               :form_method => :post
             } # end locals
         } # end lambda
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash.now[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :create and a passing operation' do
@@ -377,6 +406,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resource_path operation.resource },
         :as => 'resource path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:success]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :destroy and a failing operation' do
@@ -385,6 +420,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resources_path },
         :as => 'resources path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :destroy and a passing operation' do
@@ -394,6 +435,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resources_path },
         :as => 'resources path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:danger]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :edit and a failing operation' do
@@ -402,6 +449,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resources_path },
         :as => 'resources path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :edit and a passing operation' do
@@ -420,6 +473,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
               :form_method => :patch
             } # end locals
         } # end lambda
+
+      it 'should not set the flash' do
+        perform_action
+
+        expect(render_context.flash).to be_empty
+      end # it
     end # describe
 
     describe 'with :action => :index and a failing operation' do
@@ -428,6 +487,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { Bronze::Rails::Services::RoutesService.instance.root_path },
         :as => 'root path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:warning]).to include message
+      end # it
 
       wrap_context 'when the resource has a parent resource' do
         let(:parent) { resource_definition.parent_resources.last }
@@ -459,6 +524,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
           expect(options[:locals]).
             to be == { :books => operation.resources }
         } # end lambda
+
+      it 'should not set the flash' do
+        perform_action
+
+        expect(render_context.flash).to be_empty
+      end # it
     end # describe
 
     describe 'with :action => :new and a failing operation' do
@@ -467,6 +538,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resources_path },
         :as => 'resources path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :new and a passing operation' do
@@ -485,6 +562,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
               :form_method => :post
             } # end locals
         } # end lambda
+
+      it 'should not set the flash' do
+        perform_action
+
+        expect(render_context.flash).to be_empty
+      end # it
     end # describe
 
     describe 'with :action => :show and a failing operation' do
@@ -493,6 +576,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resources_path },
         :as => 'resources path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :show and a passing operation' do
@@ -506,6 +595,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
           expect(options[:locals]).
             to be == { :book => operation.resource }
         } # end lambda
+
+      it 'should not set the flash' do
+        perform_action
+
+        expect(render_context.flash).to be_empty
+      end # it
     end # describe
 
     describe 'with :action => :update and a failing operation' do
@@ -523,6 +618,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
               :form_method => :patch
             } # end locals
         } # end lambda
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash.now[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :update and a passing operation' do
@@ -532,6 +633,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resource_path(operation.resource) },
         :as => 'resource path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:success]).to include message
+      end # it
     end # describe
   end # describe
 

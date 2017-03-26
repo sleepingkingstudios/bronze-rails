@@ -100,7 +100,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     let(:primary_callback) do
       {
         :method_name => :require_primary_resource,
-        :options     => { :only => %i(update destroy) }
+        :options     => { :only => %i(show edit update destroy) }
       } # end callback
     end # let
 
@@ -287,6 +287,8 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         with(resource_class, params[:id]).
         and_return(operation)
 
+      instance.send :require_primary_resource
+
       expect(instance.send :edit_resource).to be operation
     end # it
   end # describe
@@ -357,6 +359,8 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         to receive(:find_one).
         with(resource_class, params[:id]).
         and_return(operation)
+
+      instance.send :require_primary_resource
 
       expect(instance.send :show_resource).to be operation
     end # it
