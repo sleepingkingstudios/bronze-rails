@@ -54,6 +54,12 @@ RSpec.describe BooksController, :type => :controller do
       include_examples 'should redirect to',
         ->() { books_path },
         :as => 'books_path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(controller.flash[:warning]).to include 'Unable to find book.'
+      end # it
     end # describe
   end # shared_examples
 
@@ -112,6 +118,13 @@ RSpec.describe BooksController, :type => :controller do
           expect(errors[:book][:title]).to include expected_error
         } # end include_examples
 
+      it 'should set the flash' do
+        perform_action
+
+        expect(controller.flash.now[:warning]).
+          to include 'Unable to create book.'
+      end # it
+
       it 'should not create a book' do
         expect { perform_action }.not_to change(books_collection, :count)
       end # it
@@ -138,6 +151,13 @@ RSpec.describe BooksController, :type => :controller do
           expect(created_book.send attr_name).to be == value
         end # each
       end # it
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(controller.flash[:success]).
+          to include 'Successfully created book.'
+      end # it
     end # describe
   end # describe
 
@@ -158,6 +178,13 @@ RSpec.describe BooksController, :type => :controller do
       expect { perform_action }.to change(books_collection, :count).by(-1)
 
       expect(books_collection.find book.id).to be nil
+    end # it
+
+    it 'should set the flash' do
+      perform_action
+
+      expect(controller.flash[:danger]).
+        to include 'Successfully destroyed book.'
     end # it
   end # describe
 
@@ -181,6 +208,12 @@ RSpec.describe BooksController, :type => :controller do
 
         expect(found_book).to be == book
       } # end include_examples
+
+    it 'should not set the flash' do
+      perform_action
+
+      expect(controller.flash).to be_empty
+    end # it
   end # describe
 
   describe '#index' do
@@ -196,6 +229,12 @@ RSpec.describe BooksController, :type => :controller do
         expect(matching_books).to be_a Array
         expect(matching_books.empty?).to be true
       } # end include_examples
+
+    it 'should not set the flash' do
+      perform_action
+
+      expect(controller.flash).to be_empty
+    end # it
 
     wrap_context 'when the collection has many books' do
       include_examples 'should render template',
@@ -253,6 +292,12 @@ RSpec.describe BooksController, :type => :controller do
         expect(book).to be_a Spec::Book
         expect(book_attributes).to be == expected_attributes
       } # end include_examples
+
+    it 'should not set the flash' do
+      perform_action
+
+      expect(controller.flash).to be_empty
+    end # it
   end # describe
 
   describe '#show' do
@@ -275,6 +320,12 @@ RSpec.describe BooksController, :type => :controller do
 
         expect(found_book).to be == book
       } # end include_examples
+
+    it 'should not set the flash' do
+      perform_action
+
+      expect(controller.flash).to be_empty
+    end # it
   end # describe
 
   describe '#update' do
@@ -326,6 +377,13 @@ RSpec.describe BooksController, :type => :controller do
         expect { perform_action }.
           not_to change { books_collection.find(book.id).attributes }
       end # it
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(controller.flash.now[:warning]).
+          to include 'Unable to update book.'
+      end # it
     end # describe
 
     describe 'with valid attributes' do
@@ -348,6 +406,13 @@ RSpec.describe BooksController, :type => :controller do
         expect { perform_action }.
           to change { books_collection.find(book.id).attributes }.
           to be == expected_attributes
+      end # it
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(controller.flash[:success]).
+          to include 'Successfully updated book.'
       end # it
     end # describe
   end # describe

@@ -45,7 +45,8 @@ module Bronze::Rails::Resources
 
       other.before_action :require_parent_resources
 
-      other.before_action :require_primary_resource, :only => %i(update destroy)
+      other.before_action :require_primary_resource,
+        :only => %i(show edit update destroy)
     end # class method included
 
     delegate :resource_definition, :to => :class
@@ -107,8 +108,7 @@ module Bronze::Rails::Resources
     end # method destroy_resource
 
     def edit_resource
-      find_one(resource_class, params[:id]).
-        then { |operation| assign_associations(operation.resource) }
+      @find_operation.then { assign_associations(primary_resource) }
     end # method edit_resource
 
     def index_resources
@@ -121,8 +121,7 @@ module Bronze::Rails::Resources
     end # method new_resource
 
     def show_resource
-      find_one(resource_class, params[:id]).
-        then { |operation| assign_associations(operation.resource) }
+      @find_operation.then { assign_associations(primary_resource) }
     end # method show_resource
 
     def update_resource
@@ -159,7 +158,10 @@ module Bronze::Rails::Resources
 
     def require_primary_resource
       require_one(resource_definition, params[:id]).
-        then { |operation| @primary_resource = operation.resource }
+        then do |operation|
+          @find_operation   = operation
+          @primary_resource = operation.resource
+        end # then
     end # method require_primary_resource
 
     ############################################################################

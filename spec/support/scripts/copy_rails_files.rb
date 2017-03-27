@@ -38,6 +38,7 @@ module Spec
 
     def file_patterns
       [
+        'config/locales/*.yml',
         'config/routes.rb',
         'app/controllers/**/*.rb',
         'app/views/**/*.erb'

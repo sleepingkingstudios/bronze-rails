@@ -1,8 +1,7 @@
 # lib/bronze/rails/responders/render_view_responder.rb
 
-require 'sleeping_king_studios/tools/toolbelt'
-
-require 'bronze/rails/responders'
+require 'bronze/rails/responders/messages'
+require 'bronze/rails/responders/responder'
 require 'bronze/rails/services/routes_service'
 
 module Bronze::Rails::Responders
@@ -11,23 +10,22 @@ module Bronze::Rails::Responders
   # Responder for the omakase Rails behavior, e.g. an application or action that
   # renders a Rails template or redirects to another page within the
   # application.
-  class RenderViewResponder
+  class RenderViewResponder < Responder
+    include Bronze::Rails::Responders::Messages
+
     # @param render_context [Object] The object to which render and redirect_to
     #   calls are delegated.
     # @param resource_definition [Resource] The definition of the primary
     #   resource.
     def initialize render_context, resource_definition, options = {}
-      @render_context      = render_context
-      @resource_definition = resource_definition
-      @options             = options
+      @render_context = render_context
+
+      super resource_definition, options
     end # constructor
 
     # @return [Object] The object to which render and redirect_to calls are
     #   delegated.
     attr_reader :render_context
-
-    # @return [Resource] The definition of the primary resource.
-    attr_reader :resource_definition
 
     # Either renders the requested template or redirects to the requested path.
     #
@@ -46,14 +44,6 @@ module Bronze::Rails::Responders
     end # method call
 
     private
-
-    def ancestors
-      resources = @options.fetch(:resources, {})
-
-      @resource_definition.parent_resources.map do |ancestor|
-        resources[ancestor.parent_key]
-      end # map
-    end # method ancestors
 
     def build_associations_hash
       resources      = @options.fetch(:resources, {})
@@ -132,6 +122,14 @@ module Bronze::Rails::Responders
       } # end options
     end # method options_for_valid_resource
 
+    def redirect_to redirect_path, options = {}
+      render_context.redirect_to(redirect_path)
+
+      return unless options[:messages]
+
+      options[:messages].each { |key, value| set_flash key, value }
+    end # method
+
     def render_template template, options
       status = options.fetch(:http_status, :ok)
       locals = build_locals options
@@ -141,15 +139,12 @@ module Bronze::Rails::Responders
         :template => template,
         :locals   => locals
       ) # end render
+
+      return unless options[:messages]
+
+      options[:messages].
+        each { |key, value| set_flash key, value, :now => true }
     end # method render_template
-
-    def resource_path resource
-      @resource_definition.resource_path(*ancestors, resource)
-    end # method resource_path
-
-    def resources_path
-      @resource_definition.resources_path(*ancestors)
-    end # method resources_path
 
     def respond_to_create_failure operation
       options =
@@ -158,26 +153,35 @@ module Bronze::Rails::Responders
           :locals => {
             :form_action => resources_path,
             :form_method => :post
-          } # end locals
+          }, # end locals
+          :messages => { :warning => build_message(:create, :failure) }
         ) # end update
 
       render_template @resource_definition.new_template, options
     end # method respond_to_create_failure
 
     def respond_to_create_success operation
-      render_context.redirect_to(resource_path operation.resource)
+      messages = { :success => build_message(:create, :success) }
+
+      redirect_to resource_path(operation.resource), :messages => messages
     end # method respond_to_create_success
 
     def respond_to_destroy_failure _operation
-      render_context.redirect_to(resources_path)
+      messages = { :warning => build_message(:destroy, :failure) }
+
+      redirect_to(resources_path, :messages => messages)
     end # method respond_to_destroy_failure
 
     def respond_to_destroy_success _operation
-      render_context.redirect_to(resources_path)
+      messages = { :danger => build_message(:destroy, :success) }
+
+      redirect_to(resources_path, :messages => messages)
     end # method respond_to_destroy_success
 
     def respond_to_edit_failure _operation
-      render_context.redirect_to(resources_path)
+      messages = { :warning => build_message(:edit, :failure) }
+
+      redirect_to(resources_path, :messages => messages)
     end # method respond_to_edit_failure
 
     def respond_to_edit_success operation
@@ -202,7 +206,9 @@ module Bronze::Rails::Responders
           Bronze::Rails::Services::RoutesService.instance.root_path
         end # if-else
 
-      render_context.redirect_to(redirect_path)
+      messages = { :warning => build_message(:index, :failure) }
+
+      redirect_to(redirect_path, :messages => messages)
     end # method respond_to_index_failure
 
     def respond_to_index_success operation
@@ -213,7 +219,9 @@ module Bronze::Rails::Responders
     end # method respond_to_index_success
 
     def respond_to_new_failure _operation
-      render_context.redirect_to(resources_path)
+      messages = { :warning => build_message(:new, :failure) }
+
+      redirect_to(resources_path, :messages => messages)
     end # method respond_to_new_failure
 
     def respond_to_new_success operation
@@ -230,11 +238,15 @@ module Bronze::Rails::Responders
     end # method respond_to_new_success
 
     def respond_to_not_found _operation
-      render_context.redirect_to(resources_path)
+      messages = { :warning => build_message(:not_found) }
+
+      redirect_to(resources_path, :messages => messages)
     end # method respond_to_not_found
 
     def respond_to_show_failure _operation
-      render_context.redirect_to(resources_path)
+      messages = { :warning => build_message(:show, :failure) }
+
+      redirect_to(resources_path, :messages => messages)
     end # method respond_to_show_failure
 
     def respond_to_show_success operation
@@ -250,19 +262,25 @@ module Bronze::Rails::Responders
           :locals => {
             :form_action => resource_path(operation.resource),
             :form_method => :patch
-          } # end locals
+          }, # end locals
+          :messages => { :warning => build_message(:update, :failure) }
         ) # end update
 
       render_template @resource_definition.edit_template, options
     end # method respond_to_update_failure
 
     def respond_to_update_success operation
-      render_context.redirect_to(resource_path operation.resource)
+      messages = { :success => build_message(:update, :success) }
+
+      redirect_to resource_path(operation.resource), :messages => messages
     end # method respond_to_update_success
 
-    def tools
-      SleepingKingStudios::Tools::Toolbelt.instance
-    end # method tools
+    def set_flash key, message, now: false
+      flash    = render_context.flash
+      flash    = flash.now if now
+
+      (flash[key] ||= []) << message
+    end # method set_flash
   end # class
 
   # rubocop:enable Metrics/ClassLength

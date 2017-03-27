@@ -2,54 +2,15 @@
 
 require 'rails_helper'
 
-require 'bronze/rails/resources/resource'
 require 'bronze/rails/responders/render_view_responder'
+require 'bronze/rails/responders/responder_examples'
 
-require 'fixtures/entities/book'
-require 'fixtures/entities/chapter'
-require 'fixtures/entities/section'
+require 'support/mocks/controller'
 
 RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
-  shared_context 'when the resource has a parent resource' do
-    let(:ancestors) do
-      [
-        {
-          :name  => :books,
-          :type  => :resource,
-          :class => Spec::Book
-        } # end books
-      ] # end ancestors
-    end # let
-    let(:resource_class) { Spec::Chapter }
-    let(:resource_options) do
-      super().merge :ancestors => ancestors
-    end # let
-  end # shared_context
+  include Spec::Examples::ResponderExamples
 
-  shared_context 'when the resource has a grandparent and parent resource' do
-    let(:ancestors) do
-      [
-        {
-          :name  => :books,
-          :type  => :resource,
-          :class => Spec::Book
-        }, # end books
-        {
-          :name  => :chapters,
-          :type  => :resource,
-          :class => Spec::Chapter
-        } # end chapters
-      ] # end ancestors
-    end # let
-    let(:resource_class) { Spec::Section }
-    let(:resource_options) do
-      super().merge :ancestors => ancestors
-    end # let
-  end # shared_context
-
-  let(:render_context) do
-    double('render_context', :render => nil, :redirect_to => nil)
-  end # let
+  let(:render_context)   { Spec::Controller.new }
   let(:resource_class)   { Spec::Book }
   let(:resource_options) { {} }
   let(:resource_definition) do
@@ -64,6 +25,8 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
   describe '::new' do
     it { expect(described_class).to be_constructible.with(2..3).arguments }
   end # describe
+
+  include_examples 'should implement the Responder methods'
 
   describe '#build_errors' do
     shared_context 'with errors for one book' do
@@ -369,6 +332,16 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
         :success?  => success
       ) # end operation
     end # let
+    let(:message) do
+      'This is a test of the emergency broadcast system. This is only a test.'
+    end # let
+
+    before(:example) do
+      allow(instance).
+        to receive(:build_message).
+        with(action, success ? :success : :failure).
+        and_return(message)
+    end # before example
 
     def perform_action
       instance.call(operation, :action => action)
@@ -385,9 +358,22 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       let(:action)    { :not_found }
       let(:operation) { nil }
 
+      before(:example) do
+        allow(instance).
+          to receive(:build_message).
+          with(action).
+          and_return(message)
+      end # before example
+
       include_examples 'should redirect to',
         ->() { resource_definition.resources_path },
         :as => 'resources path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :create and a failing operation' do
@@ -405,6 +391,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
               :form_method => :post
             } # end locals
         } # end lambda
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash.now[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :create and a passing operation' do
@@ -414,6 +406,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resource_path operation.resource },
         :as => 'resource path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:success]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :destroy and a failing operation' do
@@ -422,6 +420,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resources_path },
         :as => 'resources path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :destroy and a passing operation' do
@@ -431,6 +435,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resources_path },
         :as => 'resources path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:danger]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :edit and a failing operation' do
@@ -439,6 +449,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resources_path },
         :as => 'resources path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :edit and a passing operation' do
@@ -457,6 +473,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
               :form_method => :patch
             } # end locals
         } # end lambda
+
+      it 'should not set the flash' do
+        perform_action
+
+        expect(render_context.flash).to be_empty
+      end # it
     end # describe
 
     describe 'with :action => :index and a failing operation' do
@@ -465,6 +487,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { Bronze::Rails::Services::RoutesService.instance.root_path },
         :as => 'root path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:warning]).to include message
+      end # it
 
       wrap_context 'when the resource has a parent resource' do
         let(:parent) { resource_definition.parent_resources.last }
@@ -496,6 +524,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
           expect(options[:locals]).
             to be == { :books => operation.resources }
         } # end lambda
+
+      it 'should not set the flash' do
+        perform_action
+
+        expect(render_context.flash).to be_empty
+      end # it
     end # describe
 
     describe 'with :action => :new and a failing operation' do
@@ -504,6 +538,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resources_path },
         :as => 'resources path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :new and a passing operation' do
@@ -522,6 +562,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
               :form_method => :post
             } # end locals
         } # end lambda
+
+      it 'should not set the flash' do
+        perform_action
+
+        expect(render_context.flash).to be_empty
+      end # it
     end # describe
 
     describe 'with :action => :show and a failing operation' do
@@ -530,6 +576,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resources_path },
         :as => 'resources path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :show and a passing operation' do
@@ -543,6 +595,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
           expect(options[:locals]).
             to be == { :book => operation.resource }
         } # end lambda
+
+      it 'should not set the flash' do
+        perform_action
+
+        expect(render_context.flash).to be_empty
+      end # it
     end # describe
 
     describe 'with :action => :update and a failing operation' do
@@ -560,6 +618,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
               :form_method => :patch
             } # end locals
         } # end lambda
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash.now[:warning]).to include message
+      end # it
     end # describe
 
     describe 'with :action => :update and a passing operation' do
@@ -569,6 +633,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       include_examples 'should redirect to',
         ->() { resource_definition.resource_path(operation.resource) },
         :as => 'resource path'
+
+      it 'should set the flash' do
+        perform_action
+
+        expect(render_context.flash[:success]).to include message
+      end # it
     end # describe
   end # describe
 
@@ -576,100 +646,5 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
     include_examples 'should have reader',
       :render_context,
       ->() { be == render_context }
-  end # describe
-
-  describe '#resource_definition' do
-    include_examples 'should have reader',
-      :resource_definition,
-      ->() { be == resource_definition }
-  end # describe
-
-  describe '#resource_path' do
-    let(:book)     { Spec::Book.new }
-    let(:expected) { "/books/#{book.id}" }
-
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:resource_path)
-
-      expect(instance).to respond_to(:resource_path, true).with(1).argument
-    end # it
-
-    it { expect(instance.send :resource_path, book).to be == expected }
-
-    wrap_context 'when the resource has a parent resource' do
-      let(:chapter) { Spec::Chapter.new }
-
-      it 'should raise an error' do
-        expect { instance.send :resource_path, chapter }.
-          to raise_error ActionController::UrlGenerationError
-      end # it
-
-      context 'when resources includes the parent resources' do
-        let(:resources) { super().merge :book => book }
-        let(:expected)  { "/books/#{book.id}/chapters/#{chapter.id}" }
-
-        it { expect(instance.send :resource_path, chapter).to be == expected }
-      end # context
-    end # wrap_context
-
-    wrap_context 'when the resource has a grandparent and parent resource' do
-      let(:section) { Spec::Section.new }
-
-      it 'should raise an error' do
-        expect { instance.send :resource_path, section }.
-          to raise_error ActionController::UrlGenerationError
-      end # it
-
-      context 'when resources includes the parent resources' do
-        let(:chapter)   { Spec::Chapter.new }
-        let(:resources) { super().merge :book => book, :chapter => chapter }
-        let(:expected) do
-          "/books/#{book.id}/chapters/#{chapter.id}/sections/#{section.id}"
-        end # let
-
-        it { expect(instance.send :resource_path, section).to be == expected }
-      end # context
-    end # wrap_context
-  end # describe
-
-  describe '#resources_path' do
-    it 'should define the private reader' do
-      expect(instance).not_to respond_to(:resources_path)
-
-      expect(instance).to respond_to(:resources_path, true).with(0).arguments
-    end # it
-
-    it { expect(instance.send :resources_path).to be == '/books' }
-
-    wrap_context 'when the resource has a parent resource' do
-      it 'should raise an error' do
-        expect { instance.send :resources_path }.
-          to raise_error ActionController::UrlGenerationError
-      end # it
-
-      context 'when resources includes the parent resources' do
-        let(:book)      { Spec::Book.new }
-        let(:resources) { super().merge :book => book }
-        let(:expected)  { "/books/#{book.id}/chapters" }
-
-        it { expect(instance.send :resources_path).to be == expected }
-      end # context
-    end # wrap_context
-
-    wrap_context 'when the resource has a grandparent and parent resource' do
-      it 'should raise an error' do
-        expect { instance.send :resources_path }.
-          to raise_error ActionController::UrlGenerationError
-      end # it
-
-      context 'when resources includes the parent resources' do
-        let(:book)      { Spec::Book.new }
-        let(:chapter)   { Spec::Chapter.new }
-        let(:resources) { super().merge :book => book, :chapter => chapter }
-        let(:expected)  { "/books/#{book.id}/chapters/#{chapter.id}/sections" }
-
-        it { expect(instance.send :resources_path).to be == expected }
-      end # context
-    end # wrap_context
   end # describe
 end # describe

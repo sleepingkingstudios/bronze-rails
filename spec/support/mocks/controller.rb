@@ -2,6 +2,8 @@
 
 require 'patina/collections/simple/repository'
 
+require 'support/mocks/flash'
+
 module Spec
   class Controller
     class << self
@@ -26,9 +28,13 @@ module Spec
       @repository  = repository
     end # constructor
 
+    def flash
+      @flash ||= Spec::Flash.new
+    end # method flash
+
     def redirect_to _; end
 
-    def render; end
+    def render _; end
 
     # rubocop:disable Metrics/AbcSize
     def run_callbacks hook
