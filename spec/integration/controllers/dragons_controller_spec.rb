@@ -109,13 +109,13 @@ RSpec.describe DragonsController, :type => :controller do
     transform =
       Bronze::Entities::Transforms::EntityTransform.new(Spec::Dragon)
 
-    controller.send(:repository).collection(:dragons, transform)
+    controller.send(:repository).collection(Spec::Dragon, transform)
   end # let
   let(:dungeons_collection) do
     transform =
       Bronze::Entities::Transforms::EntityTransform.new(Spec::Dungeon)
 
-    controller.send(:repository).collection(:dungeons, transform)
+    controller.send(:repository).collection(Spec::Dungeon, transform)
   end # let
 
   let(:params)  { {} }
