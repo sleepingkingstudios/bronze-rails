@@ -123,27 +123,24 @@ module Bronze::Rails::Responders
     end # method options_for_valid_resource
 
     def redirect_to redirect_path, options = {}
+      options.fetch(:messages, []).
+        each { |key, value| set_flash key, value }
+
       render_context.redirect_to(redirect_path)
-
-      return unless options[:messages]
-
-      options[:messages].each { |key, value| set_flash key, value }
     end # method
 
     def render_template template, options
       status = options.fetch(:http_status, :ok)
       locals = build_locals options
 
+      options.fetch(:messages, []).
+        each { |key, value| set_flash key, value, :now => true }
+
       render_context.render(
         :status   => status,
         :template => template,
         :locals   => locals
       ) # end render
-
-      return unless options[:messages]
-
-      options[:messages].
-        each { |key, value| set_flash key, value, :now => true }
     end # method render_template
 
     def respond_to_create_failure operation
