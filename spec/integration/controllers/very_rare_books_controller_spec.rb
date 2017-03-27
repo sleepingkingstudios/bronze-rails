@@ -61,7 +61,7 @@ RSpec.describe VeryRareBooksController, :type => :controller do
     transform =
       Bronze::Entities::Transforms::EntityTransform.new(Spec::Book)
 
-    controller.send(:repository).collection(:books, transform)
+    controller.send(:repository).collection(Spec::Book, transform)
   end # let
 
   let(:params)  { {} }
