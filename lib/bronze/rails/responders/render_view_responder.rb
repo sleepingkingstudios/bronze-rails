@@ -2,7 +2,6 @@
 
 require 'bronze/rails/responders/messages'
 require 'bronze/rails/responders/responder'
-require 'bronze/rails/responders/responder_examples'
 require 'bronze/rails/services/routes_service'
 
 module Bronze::Rails::Responders
