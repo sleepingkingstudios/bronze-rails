@@ -1,6 +1,10 @@
 # See http://guides.rubyonrails.org/i18n.html.
 
 en:
+  constraints:
+    errors:
+      messages:
+        empty: "must be present"
   resources:
     create:
       failure: "Unable to create %{resource}."

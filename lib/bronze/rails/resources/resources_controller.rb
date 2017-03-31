@@ -215,7 +215,10 @@ module Bronze::Rails::Resources
     end # method insert_one
 
     def validate_one resource
-      Patina::Operations::Entities::ValidateOneOperation.new.execute(resource)
+      Patina::Operations::Entities::ValidateOneOperation.new.execute(
+        resource,
+        :as => resource_definition.resource_key
+      ) # end validate_one
     end # method validate_one
 
     ############################################################################

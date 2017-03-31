@@ -96,12 +96,7 @@ RSpec.describe BooksController, :type => :controller do
 
         hsh
       end # let
-      let(:expected_error) do
-        {
-          :type => Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
-          :path => [:book, :title]
-        } # end expected_error
-      end # let
+      let(:expected_errors) { { 'book[title]' => ['must be present'] } }
 
       include_examples 'should render template',
         'books/new',
@@ -114,8 +109,7 @@ RSpec.describe BooksController, :type => :controller do
           expect(book_attributes).to be == expected_attributes
 
           errors = options[:locals][:errors]
-          expect(errors).to be_a Bronze::Errors
-          expect(errors[:book][:title]).to include expected_error
+          expect(errors).to be == expected_errors
         } # end include_examples
 
       it 'should set the flash' do
@@ -351,12 +345,7 @@ RSpec.describe BooksController, :type => :controller do
       let(:expected_attributes) do
         book.attributes.merge(update_attributes).tap { |hsh| hsh.delete :id }
       end # let
-      let(:expected_error) do
-        {
-          :type => Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
-          :path => [:book, :title]
-        } # end expected_error
-      end # let
+      let(:expected_errors) { { 'book[title]' => ['must be present'] } }
 
       include_examples 'should render template',
         'books/edit',
@@ -369,8 +358,7 @@ RSpec.describe BooksController, :type => :controller do
           expect(book_attributes).to be == expected_attributes
 
           errors = options[:locals][:errors]
-          expect(errors).to be_a Bronze::Errors
-          expect(errors[:book][:title]).to include expected_error
+          expect(errors).to be == expected_errors
         } # end include_examples
 
       it 'should not update the book' do

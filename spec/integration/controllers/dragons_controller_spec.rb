@@ -152,12 +152,7 @@ RSpec.describe DragonsController, :type => :controller do
 
         hsh
       end # let
-      let(:expected_error) do
-        {
-          :type => Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
-          :path => [:dragon, :name]
-        } # end expected_error
-      end # let
+      let(:expected_errors) { { 'dragon[name]' => ['must be present'] } }
 
       include_examples 'should render template',
         'dragons/new',
@@ -173,8 +168,7 @@ RSpec.describe DragonsController, :type => :controller do
           expect(dragon_attributes).to be == expected_attributes
 
           errors = options[:locals][:errors]
-          expect(errors).to be_a Bronze::Errors
-          expect(errors[:dragon][:name]).to include expected_error
+          expect(errors).to be == expected_errors
         } # end include_examples
 
       it 'should not create a dragon' do
@@ -425,12 +419,7 @@ RSpec.describe DragonsController, :type => :controller do
       let(:expected_attributes) do
         dragon.attributes.merge(update_attributes).tap { |hsh| hsh.delete :id }
       end # let
-      let(:expected_error) do
-        {
-          :type => Bronze::Constraints::PresenceConstraint::EMPTY_ERROR,
-          :path => [:dragon, :name]
-        } # end expected_error
-      end # let
+      let(:expected_errors) { { 'dragon[name]' => ['must be present'] } }
 
       include_examples 'should render template',
         'dragons/edit',
@@ -447,8 +436,7 @@ RSpec.describe DragonsController, :type => :controller do
           expect(dragon_attributes).to be == expected_attributes
 
           errors = options[:locals][:errors]
-          expect(errors).to be_a Bronze::Errors
-          expect(errors[:dragon][:name]).to include expected_error
+          expect(errors).to be == expected_errors
         } # end include_examples
 
       it 'should not update the dragon' do
