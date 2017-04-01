@@ -43,7 +43,9 @@ module Bronze::Rails::Responders
     end # method resources_path
 
     def tools
+      # :nocov:
       SleepingKingStudios::Tools::Toolbelt.instance
+      # :nocov:
     end # method tools
   end # class
 end # module

@@ -1,5 +1,6 @@
 # lib/bronze/rails/responders/render_view_responder.rb
 
+require 'bronze/rails/responders/errors'
 require 'bronze/rails/responders/messages'
 require 'bronze/rails/responders/responder'
 require 'bronze/rails/services/routes_service'
@@ -11,6 +12,7 @@ module Bronze::Rails::Responders
   # renders a Rails template or redirects to another page within the
   # application.
   class RenderViewResponder < Responder
+    include Bronze::Rails::Responders::Errors
     include Bronze::Rails::Responders::Messages
 
     # @param render_context [Object] The object to which render and redirect_to
@@ -60,30 +62,6 @@ module Bronze::Rails::Responders
       end # each
     end # method build_associations_hash
 
-    # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/MethodLength
-    def build_errors operation
-      default_key = resource_definition.default_resource_key
-      plural_key  = tools.string.pluralize(default_key.to_s).intern
-
-      return operation.errors if resource_definition.resource_key == default_key
-
-      errors = operation.errors
-
-      if errors.key?(default_key)
-        errors[resource_definition.resource_key] = errors.delete(default_key)
-      end # if
-
-      if errors.key?(plural_key)
-        errors[resource_definition.plural_resource_key] =
-          errors.delete(plural_key)
-      end # if
-
-      errors
-    end # method build_errors
-    # rubocop:enable Metrics/AbcSize
-    # rubocop:enable Metrics/MethodLength
-
     def build_locals options
       locals = {}
 
@@ -111,7 +89,7 @@ module Bronze::Rails::Responders
       {
         :http_status => :unprocessable_entity,
         :resources   => build_resources_hash(operation),
-        :errors      => build_errors(operation)
+        :errors      => build_error_messages(operation.errors)
       } # end options
     end # method options_for_invalid_resource
 

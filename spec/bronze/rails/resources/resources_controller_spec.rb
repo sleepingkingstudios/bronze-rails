@@ -692,6 +692,8 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
   end # describe
 
   describe '#validate_one' do
+    include_context 'when the resource is defined'
+
     let(:resource) { Spec::Book.new }
 
     it 'should define the private method' do
