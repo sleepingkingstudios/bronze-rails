@@ -1,11 +1,9 @@
 # spec/spec_helper.rb
 
-unless ENV['CI']
-  # :nocov:
+unless ENV['COVERAGE'] == 'false'
   require 'simplecov'
 
   SimpleCov.start
-  # :nocov:
 end # unless
 
 require 'rspec/sleeping_king_studios/all'

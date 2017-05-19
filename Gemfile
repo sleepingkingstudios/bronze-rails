@@ -15,6 +15,9 @@ bronze_options =
 gem 'bronze', bronze_options
 gem 'patina', bronze_options
 
+gem 'sleeping_king_studios-tasks',
+  :git => 'https://github.com/sleepingkingstudios/sleeping_king_studios-tasks'
+
 group :doc do
   gem 'yard', '~> 0.9', '>= 0.9.5', :require => false
 end # group

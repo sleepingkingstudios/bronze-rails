@@ -2,16 +2,17 @@
 
 ENV['RAILS_ENV'] ||= 'test'
 
-gemfile = File.split(ENV.fetch 'BUNDLE_GEMFILE', '').last
-match   = gemfile.match(/\Arails_(?<version>\d_\d{1,2})\.gemfile\z/)
+require 'rails'
 
-unless match && match[:version] && !match[:version].empty?
+version     = "#{Rails::VERSION::MAJOR}_#{Rails::VERSION::MINOR}"
+rails_path  = File.expand_path "rails_#{version}", __dir__
+config_file = File.join(rails_path, 'config', 'environment')
+
+unless File.exist?("#{config_file}.rb")
   # :nocov:
-  raise 'Gemfile name does not indicate an installed version of Rails'
+  abort("Unable to initialize Rails application at #{rails_path}")
   # :nocov:
 end # unless
-
-rails_path = File.expand_path "rails_#{match[:version]}", __dir__
 
 require 'support/scripts/copy_rails_files'
 

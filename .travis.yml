@@ -9,7 +9,7 @@ gemfile:
 before_script:
 - cp .rspec.example .rspec
 script:
-- bundle exec appraisal thor bronze:ci:default
+- bundle exec thor ci:steps
 
 # Travis-CI Configuration
 cache: bundler
