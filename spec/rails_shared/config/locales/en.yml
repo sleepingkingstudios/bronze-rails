@@ -5,6 +5,7 @@ en:
     errors:
       messages:
         empty: "must be present"
+        not_unique: "is not unique"
   resources:
     create:
       failure: "Unable to create %{resource}."

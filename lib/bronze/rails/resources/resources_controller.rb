@@ -100,6 +100,9 @@ module Bronze::Rails::Resources
     def create_resource
       build_one(resource_class, resource_params).
         then { |operation| validate_one(operation.resource) }.
+        then do |operation|
+          validate_one_uniqueness(resource_class, operation.resource)
+        end. # then
         then { |operation| insert_one(resource_class, operation.resource) }
     end # method create_resource
 
@@ -127,6 +130,9 @@ module Bronze::Rails::Resources
     def update_resource
       assign_one(primary_resource, resource_params).
         then { |operation| validate_one(operation.resource) }.
+        then do |operation|
+          validate_one_uniqueness(resource_class, operation.resource)
+        end. # then
         then { |operation| update_one(resource_class, operation.resource) }
     end # method update_resource
 
@@ -220,6 +226,13 @@ module Bronze::Rails::Resources
         :as => resource_definition.resource_key
       ) # end validate_one
     end # method validate_one
+
+    def validate_one_uniqueness resource_class, resource
+      Patina::Operations::Entities::ValidateOneUniquenessOperation.new(
+        repository,
+        resource_class
+      ).execute(resource)
+    end # method validate_one_uniqueness
 
     ############################################################################
     ###                               Helpers                                ###

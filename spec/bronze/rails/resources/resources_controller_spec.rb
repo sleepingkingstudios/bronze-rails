@@ -208,6 +208,9 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     let(:validate_operation) do
       Spec::Operation.new(:resources => [resource]).execute
     end # let
+    let(:uniqueness_operation) do
+      Spec::Operation.new(:resources => [resource]).execute
+    end # let
     let(:insert_operation) do
       Spec::Operation.new(:resources => [resource]).execute
     end # let
@@ -232,8 +235,13 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         and_return(validate_operation)
 
       expect(instance).
-        to receive(:insert_one).
+        to receive(:validate_one_uniqueness).
         with(resource_class, validate_operation.resource).
+        and_return(uniqueness_operation)
+
+      expect(instance).
+        to receive(:insert_one).
+        with(resource_class, uniqueness_operation.resource).
         and_return(insert_operation)
 
       expect(instance.send :create_resource).to be insert_operation
@@ -376,6 +384,9 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     let(:validate_operation) do
       Spec::Operation.new(:resources => [resource]).execute
     end # let
+    let(:uniqueness_operation) do
+      Spec::Operation.new(:resources => [resource]).execute
+    end # let
     let(:update_operation) do
       Spec::Operation.new(:resources => [resource]).execute
     end # let
@@ -402,8 +413,13 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         and_return(validate_operation)
 
       expect(instance).
-        to receive(:update_one).
+        to receive(:validate_one_uniqueness).
         with(resource_class, validate_operation.resource).
+        and_return(uniqueness_operation)
+
+      expect(instance).
+        to receive(:update_one).
+        with(resource_class, uniqueness_operation.resource).
         and_return(update_operation)
 
       expect(instance.send :update_resource).to be update_operation
@@ -709,6 +725,31 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
       expect(operation).
         to be_a Patina::Operations::Entities::ValidateOneOperation
+      expect(operation.called?).to be true
+    end # it
+  end # describe
+
+  describe '#validate_one_uniqueness' do
+    include_context 'when the resource is defined'
+
+    let(:resource) { Spec::Book.new }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:validate_one_uniqueness)
+
+      expect(instance).
+        to respond_to(:validate_one_uniqueness, true).
+        with(2).arguments
+    end # it
+
+    it 'should return an operation' do
+      operation =
+        instance.send :validate_one_uniqueness, resource_class, resource
+
+      expect(operation).
+        to be_a Patina::Operations::Entities::ValidateOneUniquenessOperation
+      expect(operation.resource).to be resource
+      expect(operation.resource_class).to be resource_class
       expect(operation.called?).to be true
     end # it
   end # describe
