@@ -9,7 +9,7 @@ module Spec
     end # method initialize
 
     def call
-      puts 'Spec::FileCopier#call()'
+      puts 'Spec::FileCopier#call()' if ENV['VERBOSE']
 
       file_patterns.each { |pattern| copy_files pattern }
     end # method call
@@ -23,7 +23,7 @@ module Spec
         source_name.dup.tap { |str| str[0..shared_path.length] = '' }
       target_name = File.join(rails_path, short_name)
 
-      puts "  copying #{short_name} to #{target_name}"
+      puts "  copying #{short_name} to #{target_name}" if ENV['VERBOSE']
 
       FileUtils.mkdir_p File.dirname(target_name)
       FileUtils.cp source_name, target_name
