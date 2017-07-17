@@ -109,12 +109,14 @@ module Bronze::Rails::Resources
     def create_resource
       operation_builder::BuildAndInsertOne.
         new(repository).
+        else { |op| map_errors(op) }.
         execute(resource_params)
     end # method create_resource
 
     def destroy_resource
       operation_builder::DeleteOne.
         new(repository).
+        else { |op| map_errors(op) }.
         execute(primary_resource)
     end # method destroy_resource
 
@@ -140,6 +142,7 @@ module Bronze::Rails::Resources
     def update_resource
       operation_builder::AssignAndUpdateOne.
         new(repository).
+        else { |op| map_errors(op) }.
         execute(primary_resource, resource_params)
     end # method update_resource
 
@@ -244,6 +247,21 @@ module Bronze::Rails::Resources
     end # method filter_params
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
+
+    def map_errors operation
+      return operation unless operation.errors && !operation.errors.empty?
+
+      resource_key = resource_definition.resource_key
+      original_key = resource_definition.resource_class.name.split('::').last
+      original_key = tools.string.underscore(original_key).intern
+
+      return operation if resource_key == original_key
+      return operation unless operation.errors.key?(original_key)
+
+      operation.errors[resource_key] = operation.errors.delete(original_key)
+
+      operation
+    end # method map_error
 
     def null_operation
       Bronze::Operations::NullOperation.new
