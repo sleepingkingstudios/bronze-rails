@@ -89,8 +89,8 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
   end # shared_context
 
   shared_context 'when the parent resource exists in the repository' do
-    let(:initial_attributes) { { :name => 'Amazing Stories' } }
-    let(:parent_resource)    { Spec::Publisher.new(initial_attributes) }
+    let(:parent_attributes) { { :name => 'Amazing Stories' } }
+    let(:parent_resource)   { Spec::Publisher.new(parent_attributes) }
 
     before(:example) do
       repository = instance.send(:repository)
@@ -345,6 +345,76 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         expect(persisted.attributes).to be >= initial_attributes
       end # it
     end # describe
+
+    wrap_context 'when the resource has a parent resource' do
+      include_context 'when the parent resource exists in the repository'
+
+      let(:initial_attributes) do
+        super().merge :publisher_id => parent_resource.id
+      end # let
+      let(:params) { super().merge :publisher_id => parent_resource.id }
+
+      before(:example) { instance.send :require_parent_resources }
+
+      describe 'with invalid params' do
+        let(:initial_attributes) do
+          {
+            :title  => nil,
+            :series => 'Lost Works'
+          } # end let
+        end # let
+        let(:params) { super().merge :book => initial_attributes }
+
+        it 'should build and validate but not insert the resource' do
+          operation  = instance.send(:create_resource)
+          repository = instance.send(:repository)
+
+          expect(operation).
+            to be_a Bronze::Entities::Operations::BuildAndInsertOneOperation
+          expect(operation.entity_class).to be resource_class
+          expect(operation.repository).to be repository
+          expect(operation.called?).to be true
+          expect(operation.success?).to be false
+          expect(operation.result).to be_a resource_class
+          expect(operation.result.persisted?).to be false
+          expect(operation.result.publisher).to be == parent_resource
+
+          persisted =
+            repository.collection(resource_class).find(operation.result.id)
+          expect(persisted).to be nil
+        end # it
+      end # describe
+
+      describe 'with valid params' do
+        let(:initial_attributes) do
+          {
+            :title  => 'The Moon Maid',
+            :series => 'Collected Works'
+          } # end let
+        end # let
+        let(:params) { super().merge :book => initial_attributes }
+
+        it 'should build, validate, and insert the resource' do
+          operation  = instance.send(:create_resource)
+          repository = instance.send(:repository)
+
+          expect(operation).
+            to be_a Bronze::Entities::Operations::BuildAndInsertOneOperation
+          expect(operation.entity_class).to be resource_class
+          expect(operation.repository).to be repository
+          expect(operation.called?).to be true
+          expect(operation.success?).to be true
+          expect(operation.result).to be_a resource_class
+          expect(operation.result.persisted?).to be true
+          expect(operation.result.attributes).to be >= initial_attributes
+          expect(operation.result.publisher).to be == parent_resource
+
+          persisted =
+            repository.collection(resource_class).find(operation.result.id)
+          expect(persisted.attributes).to be >= initial_attributes
+        end # it
+      end # describe
+    end # wrap_context
   end # describe
 
   describe '#destroy_resource' do
@@ -382,6 +452,25 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
       expect(operation.called?).to be true
       expect(operation.result).to be == resource
     end # it
+
+    wrap_context 'when the resource has a parent resource' do
+      include_context 'when the parent resource exists in the repository'
+
+      let(:initial_attributes) do
+        super().merge :publisher_id => parent_resource.id
+      end # let
+      let(:params) { super().merge :publisher_id => parent_resource.id }
+
+      before(:example) { instance.send :require_parent_resources }
+
+      it 'should return the resource' do
+        operation = instance.send(:edit_resource)
+
+        expect(operation.called?).to be true
+        expect(operation.result).to be == resource
+        expect(operation.result.publisher).to be == parent_resource
+      end # it
+    end # wrap_context
   end # describe
 
   describe '#index_resources' do
@@ -389,11 +478,11 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     include_context 'when many resources exist in the repository'
 
     it 'should filter the resources' do
-      operation  = instance.send(:index_resources)
-      repository = instance.send(:repository)
+      operation = instance.send(:index_resources)
 
       expect(operation).to be_a Bronze::Operations::OperationChain
       expect(operation.called?).to be true
+      expect(operation.success?).to be true
       expect(operation.result).to be == resources
     end # it
 
@@ -403,14 +492,40 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
       let(:expected) { resources.select { |obj| obj.series == 'Venus' } }
 
       it 'should filter the resources' do
-        operation  = instance.send(:index_resources)
-        repository = instance.send(:repository)
+        operation = instance.send(:index_resources)
 
         expect(operation).to be_a Bronze::Operations::OperationChain
         expect(operation.called?).to be true
+        expect(operation.success?).to be true
         expect(operation.result).to contain_exactly(*expected)
       end # it
     end # describe
+
+    wrap_context 'when the resource has a parent resource' do
+      include_context 'when the parent resource exists in the repository'
+
+      let(:initial_attributes) do
+        super().map { |hsh| hsh.merge :publisher_id => parent_resource.id }
+      end # let
+      let(:params) { super().merge :publisher_id => parent_resource.id }
+
+      before(:example) do
+        instance.send :require_parent_resources
+      end # before example
+
+      it 'should assign the parent resource' do
+        operation = instance.send(:index_resources)
+
+        expect(operation).to be_a Bronze::Operations::OperationChain
+        expect(operation.called?).to be true
+        expect(operation.success?).to be true
+        expect(operation.result).to contain_exactly(*resources)
+
+        operation.result.each do |book|
+          expect(book.publisher).to be == parent_resource
+        end # each
+      end # it
+    end # wrap_context
   end # describe
 
   describe '#new_resource' do
@@ -452,6 +567,25 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
       expect(operation.called?).to be true
       expect(operation.result).to be == resource
     end # it
+
+    wrap_context 'when the resource has a parent resource' do
+      include_context 'when the parent resource exists in the repository'
+
+      let(:initial_attributes) do
+        super().merge :publisher_id => parent_resource.id
+      end # let
+      let(:params) { super().merge :publisher_id => parent_resource.id }
+
+      before(:example) { instance.send :require_parent_resources }
+
+      it 'should return the resource' do
+        operation = instance.send(:show_resource)
+
+        expect(operation.called?).to be true
+        expect(operation.result).to be == resource
+        expect(operation.result.publisher).to be == parent_resource
+      end # it
+    end # wrap_context
   end # describe
 
   describe '#update_resource' do

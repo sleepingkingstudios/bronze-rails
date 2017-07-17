@@ -3,6 +3,7 @@
 require 'sleeping_king_studios/tools/toolbox/delegator'
 require 'sleeping_king_studios/tools/toolbox/mixin'
 
+require 'bronze/operations/identity_operation'
 require 'bronze/operations/null_operation'
 
 require 'patina/operations/entities'
@@ -12,14 +13,6 @@ require 'bronze/rails/resources/resource_strategy'
 require 'bronze/rails/responders/render_view_responder'
 
 # rubocop:disable Metrics/ModuleLength
-
-module Bronze::Operations
-  class IdentityOperation < Bronze::Operations::Operation
-    def process value
-      value
-    end # method process
-  end # class
-end # module
 
 module Bronze::Rails::Resources
   # Mixin for implementing standard Rails resourceful functionality in a
@@ -121,7 +114,9 @@ module Bronze::Rails::Resources
     end # method destroy_resource
 
     def edit_resource
-      Bronze::Operations::IdentityOperation.new.execute(primary_resource)
+      Bronze::Operations::IdentityOperation.new.
+        then { |op| assign_associations(*op.result) }.
+        execute(primary_resource)
     end # method edit_resource
 
     def index_resources
@@ -136,7 +131,9 @@ module Bronze::Rails::Resources
     end # method new_resource
 
     def show_resource
-      Bronze::Operations::IdentityOperation.new.execute(primary_resource)
+      Bronze::Operations::IdentityOperation.new.
+        then { |op| assign_associations(op.result) }.
+        execute(primary_resource)
     end # method show_resource
 
     def update_resource
