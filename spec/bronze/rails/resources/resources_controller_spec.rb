@@ -675,10 +675,10 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
       it 'should fail with a missing resource error' do
         operation = instance.send :require_parent_resources
 
-          expect(operation).to be_a Bronze::Operations::OperationChain
-          expect(operation.called?).to be true
-          expect(operation.success?).to be false
-          expect(operation.result).to be nil
+        expect(operation).to be_a Bronze::Operations::OperationChain
+        expect(operation.called?).to be true
+        expect(operation.success?).to be false
+        expect(operation.result).to be nil
       end # it
 
       wrap_context 'when the parent resource exists in the repository' do
@@ -1219,10 +1219,9 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
       wrap_context 'when the resource has a parent resource' do
         it 'should return an operation builder' do
-          resource_definition = described_class.resource_definition
-          parent_definition   =
+          parent_definition =
             described_class.resource_definition.parent_resources.first
-          builder             =
+          builder           =
             instance.send(:operation_builder, parent_definition)
 
           expect(builder).

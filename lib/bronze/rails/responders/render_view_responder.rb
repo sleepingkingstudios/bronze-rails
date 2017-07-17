@@ -62,17 +62,6 @@ module Bronze::Rails::Responders
       end # each
     end # method build_associations_hash
 
-    def build_errors errors
-      original_key = resource_definition.resource_name.intern
-
-      return errors unless resource_definition.resource_key != original_key
-      return errors unless errors.key?(original_key)
-
-      err             = errors.dup
-      resource_errors = err[resource_definition.resource_key]
-      err
-    end # method build_errors
-
     def build_locals options
       locals = {}
 

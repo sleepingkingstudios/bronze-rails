@@ -3,8 +3,16 @@
 require 'bronze/rails/resources'
 
 module Bronze::Rails::Resources
+  # Strategy class for mapping a resource class to an operation builder that can
+  # be used to perform resourceful actions.
   module ResourceStrategy
     class << self
+      # Maps the given resource class to an operation builder conforming to a
+      # standard interface.
+      #
+      # @param resource_class [Class] The class corresponding to the resource.
+      #
+      # @return [Bronze::Operations::OperationBuilder] An operation builder.
       def for resource_class
         strategy =
           constant_operations_strategy(resource_class) ||

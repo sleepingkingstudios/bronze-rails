@@ -147,6 +147,7 @@ module Bronze::Rails::Resources
     ###                             Callbacks                                ###
     ############################################################################
 
+    # rubocop:disable Metrics/AbcSize
     def require_parent_resources
       resource_definition.parent_resources.reduce(null_operation.execute) \
       do |last_operation, parent_definition|
@@ -158,8 +159,9 @@ module Bronze::Rails::Resources
           resources[parent_definition.parent_key] = operation.result
         end # then
       end. # reduce
-      execute
+        execute
     end # method require_parent_resources
+    # rubocop:enable Metrics/AbcSize
 
     def require_primary_resource
       require_one(resource_definition).
@@ -245,6 +247,7 @@ module Bronze::Rails::Resources
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
 
+    # rubocop:disable Metrics/AbcSize
     def map_errors operation
       return operation unless operation.errors && !operation.errors.empty?
 
@@ -259,6 +262,7 @@ module Bronze::Rails::Resources
 
       operation
     end # method map_error
+    # rubocop:enable Metrics/AbcSize
 
     def null_operation
       Bronze::Operations::NullOperation.new
