@@ -6,6 +6,7 @@ require 'bronze/rails/resources/resources_controller'
 
 require 'fixtures/entities/book'
 require 'fixtures/entities/chapter'
+require 'fixtures/entities/publisher'
 require 'support/mocks/controller'
 require 'support/mocks/operation'
 
@@ -20,13 +21,12 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     let(:ancestors) do
       [
         {
-          :name  => :books,
+          :name  => :publishers,
           :type  => :resource,
-          :class => Spec::Book
+          :class => Spec::Publisher
         } # end books
       ] # end ancestors
     end # let
-    let(:resource_class) { Spec::Chapter }
     let(:resource_options) do
       super().merge :ancestors => ancestors
     end # let
@@ -85,6 +85,17 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
       resources.each do |resource|
         repository.collection(Spec::Book).insert(resource)
       end # each
+    end # before example
+  end # shared_context
+
+  shared_context 'when the parent resource exists in the repository' do
+    let(:initial_attributes) { { :name => 'Amazing Stories' } }
+    let(:parent_resource)    { Spec::Publisher.new(initial_attributes) }
+
+    before(:example) do
+      repository = instance.send(:repository)
+
+      repository.collection(Spec::Publisher).insert(parent_resource)
     end # before example
   end # shared_context
 
@@ -527,8 +538,17 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
 
     wrap_context 'when the resource has a parent resource' do
-      wrap_context 'when the resource exists in the repository' do
-        let(:params) { super().merge :book_id => resource.id }
+      it 'should fail with a missing resource error' do
+        operation = instance.send :require_parent_resources
+
+          expect(operation).to be_a Bronze::Operations::OperationChain
+          expect(operation.called?).to be true
+          expect(operation.success?).to be false
+          expect(operation.result).to be nil
+      end # it
+
+      wrap_context 'when the parent resource exists in the repository' do
+        let(:params) { super().merge :publisher_id => parent_resource.id }
 
         it 'should find and assign the parent resource' do
           operation = instance.send :require_parent_resources
@@ -536,7 +556,14 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
           expect(operation).to be_a Bronze::Operations::OperationChain
           expect(operation.called?).to be true
           expect(operation.success?).to be true
-          expect(operation.result).to be == resource
+          expect(operation.result).to be == parent_resource
+        end # it
+
+        it 'should assign the parent resource to #resources' do
+          instance.send :require_parent_resources
+
+          expect(instance.send(:resources).fetch(:publisher)).
+            to be == parent_resource
         end # it
       end # wrap_context
     end # wrap_context
@@ -705,17 +732,17 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         operation.execute(resource.id)
       end # it
 
-      wrap_context 'when the resource exists in the repository' do
+      wrap_context 'when the parent resource exists in the repository' do
         it 'should find the resource' do
           operation = instance.send(:require_one, parent_definition)
 
           expect(operation).to be_a Bronze::Operations::OperationChain
 
-          operation.execute(resource.id)
+          operation.execute(parent_resource.id)
 
           expect(operation.called?).to be true
           expect(operation.success?).to be true
-          expect(operation.result).to be == resource
+          expect(operation.result).to be == parent_resource
           expect(operation.result.persisted?).to be true
         end # it
 
@@ -723,7 +750,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
           expect(instance).not_to receive(:build_responder)
 
           operation = instance.send(:require_one, parent_definition)
-          operation.execute(resource.id)
+          operation.execute(parent_resource.id)
         end # it
       end # context
     end # describe
@@ -763,32 +790,32 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # describe
 
     wrap_context 'when the resource has a parent resource' do
-      let(:parent_resource) { Spec::Book.new }
+      let(:parent_resource) { Spec::Publisher.new }
 
       before(:example) do
         allow(instance).
           to receive(:resources).
-          and_return(:book => parent_resource)
+          and_return(:publisher => parent_resource)
       end # before example
 
       describe 'with one primary resource' do
-        let(:primary_resource) { Spec::Chapter.new }
+        let(:primary_resource) { Spec::Book.new }
 
         it 'should assign the associations to the primary resource' do
           instance.send :assign_associations, primary_resource
 
-          expect(primary_resource.book).to be parent_resource
+          expect(primary_resource.publisher).to be parent_resource
         end # it
       end # describe
 
       describe 'with many primary resources' do
-        let(:primary_resources) { Array.new(3) { Spec::Chapter.new } }
+        let(:primary_resources) { Array.new(3) { Spec::Book.new } }
 
         it 'should assign the associations to the primary resources' do
           instance.send(:assign_associations, *primary_resources)
 
           primary_resources.each do |primary_resource|
-            expect(primary_resource.book).to be parent_resource
+            expect(primary_resource.publisher).to be parent_resource
           end # each
         end # it
       end # describe
@@ -868,9 +895,9 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # describe
 
     wrap_context 'when the resource has a parent resource' do
-      let(:book)     { Spec::Book.new }
-      let(:params)   { super().merge :book_id => book.id }
-      let(:expected) { { :matching => { 'book_id' => book.id } } }
+      let(:publisher) { Spec::Book.new }
+      let(:params)    { super().merge :publisher_id => publisher.id }
+      let(:expected)  { { :matching => { 'publisher_id' => publisher.id } } }
 
       it { expect(instance.send :filter_params).to be == expected }
 
@@ -881,8 +908,8 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         let(:expected) do
           {
             :matching => {
-              'title'   => 'A Princess of Mars',
-              'book_id' => book.id
+              'title'        => 'A Princess of Mars',
+              'publisher_id' => publisher.id
             } # end matching
           } # end expected
         end # let
@@ -1174,11 +1201,11 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # context
 
     wrap_context 'when the resource has a parent resource' do
-      let(:book)     { Spec::Book.new }
-      let(:expected) { { 'book' => book } }
+      let(:publisher) { Spec::Publisher.new }
+      let(:expected)  { { 'publisher' => publisher } }
 
       before(:example) do
-        instance.send(:resources).update(:book => book)
+        instance.send(:resources).update(:publisher => publisher)
       end # before example
 
       it { expect(instance.send :resource_params).to be == expected }
@@ -1187,15 +1214,15 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         let(:attributes) do
           { :title => 'An Unexpected Party' }
         end # let
-        let(:params) { super().merge :chapter => attributes }
+        let(:params) { super().merge :book => attributes }
 
         it { expect(instance.send :resource_params).to be == expected }
 
         wrap_context 'when all attributes are permitted' do
           let(:expected) do
             {
-              'title' => attributes[:title],
-              'book'  => book
+              'title'     => attributes[:title],
+              'publisher' => publisher
             } # end expected attributes
           end # let
 

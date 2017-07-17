@@ -13,6 +13,8 @@ module Spec
     attribute :series,     String,  :allow_nil => true
     attribute :page_count, Integer, :allow_nil => true
 
+    belongs_to :publisher, :class_name => 'Spec::Publisher'
+
     has_many :chapters, :class_name => 'Spec::Chapter'
 
     class Contract < Bronze::Entities::Contracts::EntityContract
