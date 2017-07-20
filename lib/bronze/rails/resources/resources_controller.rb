@@ -6,8 +6,6 @@ require 'sleeping_king_studios/tools/toolbox/mixin'
 require 'bronze/operations/identity_operation'
 require 'bronze/operations/null_operation'
 
-require 'patina/operations/entities'
-
 require 'bronze/rails/resources/resource'
 require 'bronze/rails/resources/resource_strategy'
 require 'bronze/rails/responders/render_view_responder'
