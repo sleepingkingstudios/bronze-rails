@@ -98,15 +98,15 @@ module Bronze::Rails::Resources
     ############################################################################
 
     def create_resource
-      operation_builder::BuildAndInsertOne.
-        new(repository).
+      operation_builder.
+        build_and_insert_one(repository).
         else { |op| map_errors(op) }.
         execute(resource_params)
     end # method create_resource
 
     def destroy_resource
-      operation_builder::DeleteOne.
-        new(repository).
+      operation_builder.
+        delete_one(repository).
         else { |op| map_errors(op) }.
         execute(primary_resource)
     end # method destroy_resource
@@ -118,14 +118,16 @@ module Bronze::Rails::Resources
     end # method edit_resource
 
     def index_resources
-      operation_builder::FindMatching.
-        new(repository).
+      operation_builder.
+        find_matching(repository).
         then { |op| assign_associations(*op.result) }.
         execute(filter_params)
     end # method index_resources
 
     def new_resource
-      operation_builder::BuildOne.new.execute(resource_params)
+      operation_builder.
+        build_one.
+        execute(resource_params)
     end # method new_resource
 
     def show_resource
@@ -135,8 +137,8 @@ module Bronze::Rails::Resources
     end # method show_resource
 
     def update_resource
-      operation_builder::AssignAndUpdateOne.
-        new(repository).
+      operation_builder.
+        assign_and_update_one(repository).
         else { |op| map_errors(op) }.
         execute(primary_resource, resource_params)
     end # method update_resource

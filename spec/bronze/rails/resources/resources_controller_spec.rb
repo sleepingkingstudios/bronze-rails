@@ -349,9 +349,6 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     wrap_context 'when the resource has a parent resource' do
       include_context 'when the parent resource exists in the repository'
 
-      let(:initial_attributes) do
-        super().merge :publisher_id => parent_resource.id
-      end # let
       let(:params) { super().merge :publisher_id => parent_resource.id }
 
       before(:example) { instance.send :require_parent_resources }
@@ -436,6 +433,38 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
       persisted = repository.collection(resource_class).find(resource.id)
       expect(persisted).to be nil
     end # it
+
+    context 'when the destroy operation fails' do
+      before(:example) do
+        repository = instance.send(:repository)
+
+        repository.collection(resource_class).delete(resource.id)
+      end # before example
+
+      it 'should fail with errors' do
+        operation = instance.send(:destroy_resource)
+
+        expect(operation).to be_a Bronze::Operations::OperationChain
+        expect(operation.called?).to be true
+        expect(operation.success?).to be false
+
+        expect(operation.errors[:book]).not_to be_empty
+      end # it
+
+      context 'when the resource has a custom key' do
+        let(:resource_options) { super().merge :resource_key => :tome }
+
+        it 'should fail with errors' do
+          operation = instance.send(:destroy_resource)
+
+          expect(operation).to be_a Bronze::Operations::OperationChain
+          expect(operation.called?).to be true
+          expect(operation.success?).to be false
+
+          expect(operation.errors[:tome]).not_to be_empty
+        end # it
+      end # context
+    end # context
   end # describe
 
   describe '#edit_resource' do
