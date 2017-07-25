@@ -27,5 +27,9 @@ Rails.application.routes.draw do
 
   resources :magazines, :only => %i[create update]
 
+  resources :publishers do
+    resources :books
+  end # resources
+
   resources :rare_books, :controller => 'very_rare_books'
 end # routes

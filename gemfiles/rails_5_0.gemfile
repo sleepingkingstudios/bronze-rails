@@ -4,7 +4,7 @@ source "https://rubygems.org"
 
 gem "bronze", :git => "https://github.com/sleepingkingstudios/bronze.git", :branch => "master"
 gem "patina", :git => "https://github.com/sleepingkingstudios/bronze.git", :branch => "master"
-gem "sleeping_king_studios-tasks", :git => "https://github.com/sleepingkingstudios/sleeping_king_studios-tasks"
+gem "sleeping_king_studios-tasks", "~> 0.1.0"
 gem "rails", "~> 5.0.0"
 
 group :doc do

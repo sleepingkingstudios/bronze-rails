@@ -29,13 +29,8 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
   include_examples 'should implement the Responder methods'
 
   describe '#build_resources_hash' do
-    let(:operation) do
-      double(
-        'operation',
-        :resource  => double('resource'),
-        :resources => Array.new(3) { double('resource') }
-      ) # end operation
-    end # let
+    let(:result)    { double('resource') }
+    let(:operation) { double('operation', :result => result) }
 
     it 'should define the private method' do
       expect(instance).not_to respond_to(:build_resources_hash)
@@ -48,20 +43,20 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
 
     it 'should wrap the resource' do
       expect(instance.send :build_resources_hash, operation).
-        to be == { :book => operation.resource }
+        to be == { :book => operation.result }
     end # it
 
     describe 'with :many => false' do
       it 'should wrap the resource' do
         expect(instance.send :build_resources_hash, operation, :many => false).
-          to be == { :book => operation.resource }
+          to be == { :book => operation.result }
       end # it
     end # describe
 
     describe 'with :many => true' do
       it 'should wrap the resources' do
         expect(instance.send :build_resources_hash, operation, :many => true).
-          to be == { :books => operation.resources }
+          to be == { :books => operation.result }
       end # it
     end # describe
 
@@ -73,7 +68,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
         expect(instance.send :build_resources_hash, operation).
           to be == {
             :book    => book,
-            :chapter => operation.resource
+            :chapter => operation.result
           } # end resources
       end # it
 
@@ -82,7 +77,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
           expect(instance.send :build_resources_hash, operation).
             to be == {
               :book    => book,
-              :chapter => operation.resource
+              :chapter => operation.result
             } # end resources
         end # it
       end # describe
@@ -92,7 +87,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
           expect(instance.send :build_resources_hash, operation, :many => true).
             to be == {
               :book     => book,
-              :chapters => operation.resources
+              :chapters => operation.result
             } # end resources
         end # it
       end # describe
@@ -108,7 +103,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
           to be == {
             :book    => book,
             :chapter => chapter,
-            :section => operation.resource
+            :section => operation.result
           } # end resources
       end # it
 
@@ -118,7 +113,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
             to be == {
               :book    => book,
               :chapter => chapter,
-              :section => operation.resource
+              :section => operation.result
             } # end resources
         end # it
       end # describe
@@ -129,7 +124,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
             to be == {
               :book    => book,
               :chapter  => chapter,
-              :sections => operation.resources
+              :sections => operation.result
             } # end resources
         end # it
       end # describe
@@ -153,7 +148,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
           to be == {
             :author   => resources[:author],
             :chapters => resources[:chapters],
-            :book     => operation.resource
+            :book     => operation.result
           } # end resources
       end # it
 
@@ -163,7 +158,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
             to be == {
               :author   => resources[:author],
               :chapters => resources[:chapters],
-              :book     => operation.resource
+              :book     => operation.result
             } # end resources
         end # it
       end # describe
@@ -174,7 +169,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
             to be == {
               :author   => resources[:author],
               :chapters => resources[:chapters],
-              :books    => operation.resources
+              :books    => operation.result
             } # end resources
         end # it
       end # describe
@@ -238,13 +233,13 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
     let(:errors)  { Bronze::Errors.new }
     let(:action)  { nil }
     let(:success) { false }
+    let(:result)  { double('resource') }
     let(:operation) do
       double(
         'operation',
-        :resource  => double('resource'),
-        :resources => Array.new(3) { double('resource') },
-        :errors    => errors,
-        :success?  => success
+        :result   => result,
+        :errors   => errors,
+        :success? => success
       ) # end operation
     end # let
     let(:error_messages) do
@@ -308,7 +303,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
           expect(options[:status]).to be :unprocessable_entity
           expect(options[:locals]).
             to be == {
-              :book        => operation.resource,
+              :book        => operation.result,
               :errors      => error_messages,
               :form_action => instance.send(:resources_path),
               :form_method => :post
@@ -327,7 +322,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       let(:success) { true }
 
       include_examples 'should redirect to',
-        ->() { resource_definition.resource_path operation.resource },
+        ->() { resource_definition.resource_path operation.result },
         :as => 'resource path'
 
       it 'should set the flash' do
@@ -390,9 +385,9 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
           expect(options[:status]).to be :ok
           expect(options[:locals]).
             to be == {
-              :book        => operation.resource,
+              :book        => operation.result,
               :errors      => [],
-              :form_action => instance.send(:resource_path, operation.resource),
+              :form_action => instance.send(:resource_path, operation.result),
               :form_method => :patch
             } # end locals
         } # end lambda
@@ -445,7 +440,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
         lambda { |options|
           expect(options[:status]).to be :ok
           expect(options[:locals]).
-            to be == { :books => operation.resources }
+            to be == { :books => operation.result }
         } # end lambda
 
       it 'should not set the flash' do
@@ -479,7 +474,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
           expect(options[:status]).to be :ok
           expect(options[:locals]).
             to be == {
-              :book        => operation.resource,
+              :book        => operation.result,
               :errors      => [],
               :form_action => instance.send(:resources_path),
               :form_method => :post
@@ -516,7 +511,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
         lambda { |options|
           expect(options[:status]).to be :ok
           expect(options[:locals]).
-            to be == { :book => operation.resource }
+            to be == { :book => operation.result }
         } # end lambda
 
       it 'should not set the flash' do
@@ -535,9 +530,9 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
           expect(options[:status]).to be :unprocessable_entity
           expect(options[:locals]).
             to be == {
-              :book        => operation.resource,
+              :book        => operation.result,
               :errors      => error_messages,
-              :form_action => instance.send(:resource_path, operation.resource),
+              :form_action => instance.send(:resource_path, operation.result),
               :form_method => :patch
             } # end locals
         } # end lambda
@@ -554,7 +549,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       let(:success) { true }
 
       include_examples 'should redirect to',
-        ->() { resource_definition.resource_path(operation.resource) },
+        ->() { resource_definition.resource_path(operation.result) },
         :as => 'resource path'
 
       it 'should set the flash' do

@@ -75,14 +75,14 @@ module Bronze::Rails::Responders
     end # method build_locals
 
     def build_resources_hash operation, many: false
-      build_associations_hash.
-        update(
-          if many
-            { @resource_definition.plural_resource_key => operation.resources }
-          else
-            { @resource_definition.resource_key => operation.resource }
-          end # if-else
-        ) # end update
+      resource_key =
+        if many
+          @resource_definition.plural_resource_key
+        else
+          @resource_definition.resource_key
+        end # if-else
+
+      build_associations_hash.update(resource_key => operation.result)
     end # method build_resources_hash
 
     def options_for_invalid_resource operation
@@ -138,7 +138,7 @@ module Bronze::Rails::Responders
     def respond_to_create_success operation
       messages = { :success => build_message(:create, :success) }
 
-      redirect_to resource_path(operation.resource), :messages => messages
+      redirect_to resource_path(operation.result), :messages => messages
     end # method respond_to_create_success
 
     def respond_to_destroy_failure _operation
@@ -164,7 +164,7 @@ module Bronze::Rails::Responders
         options_for_valid_resource(operation).
         update(
           :locals => {
-            :form_action => resource_path(operation.resource),
+            :form_action => resource_path(operation.result),
             :form_method => :patch
           } # end locals
         ) # end update
@@ -235,7 +235,7 @@ module Bronze::Rails::Responders
         options_for_invalid_resource(operation).
         update(
           :locals => {
-            :form_action => resource_path(operation.resource),
+            :form_action => resource_path(operation.result),
             :form_method => :patch
           }, # end locals
           :messages => { :warning => build_message(:update, :failure) }
@@ -247,7 +247,7 @@ module Bronze::Rails::Responders
     def respond_to_update_success operation
       messages = { :success => build_message(:update, :success) }
 
-      redirect_to resource_path(operation.resource), :messages => messages
+      redirect_to resource_path(operation.result), :messages => messages
     end # method respond_to_update_success
 
     def set_flash key, message, now: false

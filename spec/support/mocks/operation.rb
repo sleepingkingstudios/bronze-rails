@@ -10,19 +10,13 @@ module Spec
 
     attr_reader :resources
 
-    def fail! errors: nil, failure_message: nil
-      unless errors || failure_message
-        failure_message = 'operations.errors.generic_message'
-      end # unless
-
-      @errors          = errors
-      @failure_message = failure_message
+    # :nocov:
+    def fail! errors: nil
+      @errors = errors ||
+                Bronze::Errors.new.add('operations.errors.generic_message')
 
       self
     end # fail!
-
-    def resource
-      @resources.first
-    end # method resource
+    # :nocov:
   end # class
 end # module

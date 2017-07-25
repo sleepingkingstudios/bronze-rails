@@ -3,11 +3,11 @@
 require 'sleeping_king_studios/tools/toolbox/delegator'
 require 'sleeping_king_studios/tools/toolbox/mixin'
 
+require 'bronze/operations/identity_operation'
 require 'bronze/operations/null_operation'
 
-require 'patina/operations/entities'
-
 require 'bronze/rails/resources/resource'
+require 'bronze/rails/resources/resource_strategy'
 require 'bronze/rails/responders/render_view_responder'
 
 # rubocop:disable Metrics/ModuleLength
@@ -98,50 +98,88 @@ module Bronze::Rails::Resources
     ############################################################################
 
     def create_resource
-      build_one(resource_class, resource_params).
-        then { |operation| validate_one(operation.resource) }.
-        then do |operation|
-          validate_one_uniqueness(resource_class, operation.resource)
-        end. # then
-        then { |operation| insert_one(resource_class, operation.resource) }
+      operation_builder.
+        build_and_insert_one(repository).
+        else { |op| map_errors(op) }.
+        execute(resource_params)
     end # method create_resource
 
     def destroy_resource
-      destroy_one resource_class, primary_resource
+      operation_builder.
+        delete_one(repository).
+        else { |op| map_errors(op) }.
+        execute(primary_resource)
     end # method destroy_resource
 
     def edit_resource
-      @find_operation.then { assign_associations(primary_resource) }
+      Bronze::Operations::IdentityOperation.new.
+        then { |op| assign_associations(*op.result) }.
+        execute(primary_resource)
     end # method edit_resource
 
     def index_resources
-      find_matching(resource_class, filter_params).
-        then { |operation| assign_associations(*operation.resources) }
+      operation_builder.
+        find_matching(repository).
+        then { |op| assign_associations(*op.result) }.
+        execute(filter_params)
     end # method index_resources
 
     def new_resource
-      build_one resource_class, resource_params
+      operation_builder.
+        build_one.
+        execute(resource_params)
     end # method new_resource
 
     def show_resource
-      @find_operation.then { assign_associations(primary_resource) }
+      Bronze::Operations::IdentityOperation.new.
+        then { |op| assign_associations(op.result) }.
+        execute(primary_resource)
     end # method show_resource
 
     def update_resource
-      assign_one(primary_resource, resource_params).
-        then { |operation| validate_one(operation.resource) }.
-        then do |operation|
-          validate_one_uniqueness(resource_class, operation.resource)
-        end. # then
-        then { |operation| update_one(resource_class, operation.resource) }
+      operation_builder.
+        assign_and_update_one(repository).
+        else { |op| map_errors(op) }.
+        execute(primary_resource, resource_params)
     end # method update_resource
 
     ############################################################################
     ###                             Callbacks                                ###
     ############################################################################
 
-    def require_one resource_definition, resource_id
-      find_one(resource_definition.resource_class, resource_id).
+    # rubocop:disable Metrics/AbcSize
+    def require_parent_resources
+      resource_definition.parent_resources.reduce(null_operation.execute) \
+      do |last_operation, parent_definition|
+        last_operation.then do
+          resource_id = params[parent_definition.primary_key]
+
+          require_one(parent_definition).execute(resource_id)
+        end.then do |operation|
+          resources[parent_definition.parent_key] = operation.result
+        end # then
+      end. # reduce
+        execute
+    end # method require_parent_resources
+    # rubocop:enable Metrics/AbcSize
+
+    def require_primary_resource
+      require_one(resource_definition).
+        then do |operation|
+          resources[resource_definition.resource_key] = operation.result
+        end. # then
+        execute(params[:id])
+    end # method require_primary_resource
+
+    ############################################################################
+    ###                             Operations                               ###
+    ############################################################################
+
+    def require_one resource_definition
+      builder = operation_builder(resource_definition)
+
+      builder::FindOne.
+        new(repository).
         else do
           responder = build_responder(resource_definition)
 
@@ -149,96 +187,9 @@ module Bronze::Rails::Resources
         end # else
     end # method require_one
 
-    def require_parent_resources
-      resource_definition.parent_resources.reduce(null_operation.execute) \
-      do |last_operation, parent_definition|
-        last_operation.then do
-          resource_id = params[parent_definition.primary_key]
-
-          require_one(parent_definition, resource_id)
-        end.then do |operation|
-          resources[parent_definition.parent_key] = operation.resource
-        end # then
-      end # reduce
-    end # method require_parent_resources
-
-    def require_primary_resource
-      require_one(resource_definition, params[:id]).
-        then do |operation|
-          @find_operation   = operation
-          @primary_resource = operation.resource
-        end # then
-    end # method require_primary_resource
-
-    ############################################################################
-    ###                             Operations                               ###
-    ############################################################################
-
-    def assign_one resource, resource_params
-      Patina::Operations::Entities::AssignOneOperation.new.
-        execute(resource, resource_params)
-    end # method assign_one
-
-    def build_one resource_class, resource_params
-      Patina::Operations::Entities::BuildOneOperation.new(
-        resource_class
-      ).execute(resource_params)
-    end # method build_one
-
-    def destroy_one resource_class, resource
-      Patina::Operations::Entities::DestroyOneOperation.new(
-        repository,
-        resource_class
-      ).execute(resource)
-    end # method destroy_one
-
-    def find_matching resource_class, filter_params
-      Patina::Operations::Entities::FindMatchingOperation.new(
-        repository,
-        resource_class
-      ).execute(filter_params)
-    end # method find_matching
-
-    def find_one resource_class, resource_id
-      Patina::Operations::Entities::FindOneOperation.new(
-        repository,
-        resource_class
-      ).execute(resource_id)
-    end # method find_one
-
-    def insert_one resource_class, resource
-      Patina::Operations::Entities::InsertOneOperation.new(
-        repository,
-        resource_class
-      ).execute(resource)
-    end # method insert_one
-
-    def update_one resource_class, resource
-      Patina::Operations::Entities::UpdateOneOperation.new(
-        repository,
-        resource_class
-      ).execute(resource)
-    end # method insert_one
-
-    def validate_one resource
-      Patina::Operations::Entities::ValidateOneOperation.new.execute(
-        resource,
-        :as => resource_definition.resource_key
-      ) # end validate_one
-    end # method validate_one
-
-    def validate_one_uniqueness resource_class, resource
-      Patina::Operations::Entities::ValidateOneUniquenessOperation.new(
-        repository,
-        resource_class
-      ).execute(resource)
-    end # method validate_one_uniqueness
-
     ############################################################################
     ###                               Helpers                                ###
     ############################################################################
-
-    attr_accessor :primary_resource
 
     def assign_associations *primary_resources
       parent_definition = resource_definition.parent_resources.last
@@ -280,20 +231,14 @@ module Bronze::Rails::Resources
     # rubocop:disable Metrics/MethodLength
     def filter_params
       whitelist = %i(matching)
-
-      filter =
-        params.
-        permit(whitelist).
-        tap do |hsh|
-          whitelist.each do |key|
-            hsh[key] = params.key?(key) ? params[key].permit! : {}
-          end # each
-        end. # tap
-        to_h
+      filter    =
+        whitelist.each.with_object({}) do |key, hsh|
+          hsh[key] = params.key?(key) ? params[key].permit!.to_h : {}
+        end # each
 
       parent_definition = resource_definition.parent_resources.last
       if parent_definition
-        filter['matching'][parent_definition.foreign_key.to_s] =
+        filter[:matching][parent_definition.foreign_key.to_s] =
           params[parent_definition.primary_key]
       end # if
 
@@ -302,13 +247,41 @@ module Bronze::Rails::Resources
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
 
+    # rubocop:disable Metrics/AbcSize
+    def map_errors operation
+      return operation unless operation.errors && !operation.errors.empty?
+
+      resource_key = resource_definition.resource_key
+      original_key = resource_definition.resource_class.name.split('::').last
+      original_key = tools.string.underscore(original_key).intern
+
+      return operation if resource_key == original_key
+      return operation unless operation.errors.key?(original_key)
+
+      operation.errors[resource_key] = operation.errors.delete(original_key)
+
+      operation
+    end # method map_error
+    # rubocop:enable Metrics/AbcSize
+
     def null_operation
       Bronze::Operations::NullOperation.new
     end # method null_operation
 
+    def operation_builder resource_definition = nil
+      resource_definition ||= self.resource_definition
+      resource_class        = resource_definition&.resource_class
+
+      Bronze::Rails::Resources::ResourceStrategy.for(resource_class)
+    end # method operation_builder
+
     def permitted_attributes
       []
     end # method permitted_attributes
+
+    def primary_resource
+      resources[resource_definition.resource_key]
+    end # method primary_resource
 
     def resource_names
       []
@@ -341,6 +314,10 @@ module Bronze::Rails::Resources
     def resources
       @resources ||= {}
     end # method resources
+
+    def tools
+      SleepingKingStudios::Tools::Toolbelt.instance
+    end # method tools
   end # module
 end # module
 

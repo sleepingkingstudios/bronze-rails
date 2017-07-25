@@ -6,6 +6,7 @@ require 'bronze/rails/resources/resources_controller'
 
 require 'fixtures/entities/book'
 require 'fixtures/entities/chapter'
+require 'fixtures/entities/publisher'
 require 'support/mocks/controller'
 require 'support/mocks/operation'
 
@@ -20,16 +21,82 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     let(:ancestors) do
       [
         {
-          :name  => :books,
+          :name  => :publishers,
           :type  => :resource,
-          :class => Spec::Book
+          :class => Spec::Publisher
         } # end books
       ] # end ancestors
     end # let
-    let(:resource_class) { Spec::Chapter }
     let(:resource_options) do
       super().merge :ancestors => ancestors
     end # let
+  end # shared_context
+
+  shared_context 'when the resource exists in the repository' do
+    let(:initial_attributes) do
+      {
+        :title  => 'Beyond The Farthest Star',
+        :series => 'Collected Works'
+      } # attributes
+    end # let
+    let(:resource) { Spec::Book.new(initial_attributes) }
+
+    before(:example) do
+      repository = instance.send(:repository)
+
+      repository.collection(Spec::Book).insert(resource)
+    end # before example
+  end # shared_context
+
+  shared_context 'when many resources exist in the repository' do
+    let(:initial_attributes) do
+      [
+        {
+          :title  => 'Pirates of Venus',
+          :series => 'Venus'
+        }, # attributes
+        {
+          :title  => 'Lost on Venus',
+          :series => 'Venus'
+        }, # attributes
+        {
+          :title  => 'Carson of Venus',
+          :series => 'Venus'
+        }, # attributes
+        {
+          :title  => 'The Land That Time Forgot',
+          :series => 'Caspak'
+        }, # attributes
+        {
+          :title  => 'The People That Time Forgot',
+          :series => 'Caspak'
+        }, # attributes
+        {
+          :title  => "Out of Time's Abyss",
+          :series => 'Caspak'
+        } # attributes
+      ] # end array
+    end # let
+    let(:resources) { initial_attributes.map { |hsh| Spec::Book.new(hsh) } }
+
+    before(:example) do
+      repository = instance.send(:repository)
+
+      resources.each do |resource|
+        repository.collection(Spec::Book).insert(resource)
+      end # each
+    end # before example
+  end # shared_context
+
+  shared_context 'when the parent resource exists in the repository' do
+    let(:parent_attributes) { { :name => 'Amazing Stories' } }
+    let(:parent_resource)   { Spec::Publisher.new(parent_attributes) }
+
+    before(:example) do
+      repository = instance.send(:repository)
+
+      repository.collection(Spec::Publisher).insert(parent_resource)
+    end # before example
   end # shared_context
 
   shared_context 'when a subset of attributes are permitted' do
@@ -200,286 +267,418 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
   describe '#create_resource' do
     include_context 'when the resource is defined'
+    include_context 'when all attributes are permitted'
 
-    let(:resource)  { Spec::Book.new }
-    let(:build_operation) do
-      Spec::Operation.new(:resources => [resource]).execute
-    end # let
-    let(:validate_operation) do
-      Spec::Operation.new(:resources => [resource]).execute
-    end # let
-    let(:uniqueness_operation) do
-      Spec::Operation.new(:resources => [resource]).execute
-    end # let
-    let(:insert_operation) do
-      Spec::Operation.new(:resources => [resource]).execute
-    end # let
+    describe 'with empty params' do
+      it 'should build and validate but not insert the resource' do
+        operation  = instance.send(:create_resource)
+        repository = instance.send(:repository)
 
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:create_resource)
+        expect(operation).
+          to be_a Bronze::Entities::Operations::BuildAndInsertOneOperation
+        expect(operation.entity_class).to be resource_class
+        expect(operation.repository).to be repository
+        expect(operation.called?).to be true
+        expect(operation.success?).to be false
+        expect(operation.result).to be_a resource_class
+        expect(operation.result.persisted?).to be false
 
-      expect(instance).
-        to respond_to(:create_resource, true).
-        with(0).arguments
-    end # it
+        persisted =
+          repository.collection(resource_class).find(operation.result.id)
+        expect(persisted).to be nil
+      end # it
+    end # describe
 
-    it 'should build, validate and insert the resource' do
-      expect(instance).
-        to receive(:build_one).
-        with(resource_class, instance.send(:resource_params)).
-        and_return(build_operation)
+    describe 'with invalid params' do
+      let(:initial_attributes) do
+        {
+          :title  => nil,
+          :series => 'Lost Works'
+        } # end let
+      end # let
+      let(:params) { super().merge :book => initial_attributes }
 
-      expect(instance).
-        to receive(:validate_one).
-        with(build_operation.resource).
-        and_return(validate_operation)
+      it 'should build and validate but not insert the resource' do
+        operation  = instance.send(:create_resource)
+        repository = instance.send(:repository)
 
-      expect(instance).
-        to receive(:validate_one_uniqueness).
-        with(resource_class, validate_operation.resource).
-        and_return(uniqueness_operation)
+        expect(operation).
+          to be_a Bronze::Entities::Operations::BuildAndInsertOneOperation
+        expect(operation.entity_class).to be resource_class
+        expect(operation.repository).to be repository
+        expect(operation.called?).to be true
+        expect(operation.success?).to be false
+        expect(operation.result).to be_a resource_class
+        expect(operation.result.persisted?).to be false
 
-      expect(instance).
-        to receive(:insert_one).
-        with(resource_class, uniqueness_operation.resource).
-        and_return(insert_operation)
+        persisted =
+          repository.collection(resource_class).find(operation.result.id)
+        expect(persisted).to be nil
+      end # it
+    end # describe
 
-      expect(instance.send :create_resource).to be insert_operation
-    end # it
+    describe 'with valid params' do
+      let(:initial_attributes) do
+        {
+          :title  => 'The Moon Maid',
+          :series => 'Collected Works'
+        } # end let
+      end # let
+      let(:params) { super().merge :book => initial_attributes }
+
+      it 'should build, validate, and insert the resource' do
+        operation  = instance.send(:create_resource)
+        repository = instance.send(:repository)
+
+        expect(operation).
+          to be_a Bronze::Entities::Operations::BuildAndInsertOneOperation
+        expect(operation.entity_class).to be resource_class
+        expect(operation.repository).to be repository
+        expect(operation.called?).to be true
+        expect(operation.success?).to be true
+        expect(operation.result).to be_a resource_class
+        expect(operation.result.persisted?).to be true
+        expect(operation.result.attributes).to be >= initial_attributes
+
+        persisted =
+          repository.collection(resource_class).find(operation.result.id)
+        expect(persisted.attributes).to be >= initial_attributes
+      end # it
+    end # describe
+
+    wrap_context 'when the resource has a parent resource' do
+      include_context 'when the parent resource exists in the repository'
+
+      let(:params) { super().merge :publisher_id => parent_resource.id }
+
+      before(:example) { instance.send :require_parent_resources }
+
+      describe 'with invalid params' do
+        let(:initial_attributes) do
+          {
+            :title  => nil,
+            :series => 'Lost Works'
+          } # end let
+        end # let
+        let(:params) { super().merge :book => initial_attributes }
+
+        it 'should build and validate but not insert the resource' do
+          operation  = instance.send(:create_resource)
+          repository = instance.send(:repository)
+
+          expect(operation).
+            to be_a Bronze::Entities::Operations::BuildAndInsertOneOperation
+          expect(operation.entity_class).to be resource_class
+          expect(operation.repository).to be repository
+          expect(operation.called?).to be true
+          expect(operation.success?).to be false
+          expect(operation.result).to be_a resource_class
+          expect(operation.result.persisted?).to be false
+          expect(operation.result.publisher).to be == parent_resource
+
+          persisted =
+            repository.collection(resource_class).find(operation.result.id)
+          expect(persisted).to be nil
+        end # it
+      end # describe
+
+      describe 'with valid params' do
+        let(:initial_attributes) do
+          {
+            :title  => 'The Moon Maid',
+            :series => 'Collected Works'
+          } # end let
+        end # let
+        let(:params) { super().merge :book => initial_attributes }
+
+        it 'should build, validate, and insert the resource' do
+          operation  = instance.send(:create_resource)
+          repository = instance.send(:repository)
+
+          expect(operation).
+            to be_a Bronze::Entities::Operations::BuildAndInsertOneOperation
+          expect(operation.entity_class).to be resource_class
+          expect(operation.repository).to be repository
+          expect(operation.called?).to be true
+          expect(operation.success?).to be true
+          expect(operation.result).to be_a resource_class
+          expect(operation.result.persisted?).to be true
+          expect(operation.result.attributes).to be >= initial_attributes
+          expect(operation.result.publisher).to be == parent_resource
+
+          persisted =
+            repository.collection(resource_class).find(operation.result.id)
+          expect(persisted.attributes).to be >= initial_attributes
+        end # it
+      end # describe
+    end # wrap_context
   end # describe
 
   describe '#destroy_resource' do
     include_context 'when the resource is defined'
+    include_context 'when the resource exists in the repository'
 
-    let(:resource)  { Spec::Book.new }
-    let(:operation) { Spec::Operation.new(:resources => [resource]).execute }
+    let(:params) { super().merge :id => resource.id }
 
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:destroy_resource)
+    before(:example) { instance.send :require_primary_resource }
 
-      expect(instance).
-        to respond_to(:destroy_resource, true).
-        with(0).arguments
+    it 'should delete the resource' do
+      operation  = instance.send(:destroy_resource)
+      repository = instance.send(:repository)
+
+      expect(operation).to be_a Bronze::Operations::OperationChain
+      expect(operation.called?).to be true
+      expect(operation.success?).to be true
+
+      persisted = repository.collection(resource_class).find(resource.id)
+      expect(persisted).to be nil
     end # it
 
-    it 'should destroy the resource' do
-      allow(instance).to receive(:primary_resource).and_return(resource)
+    context 'when the destroy operation fails' do
+      before(:example) do
+        repository = instance.send(:repository)
 
-      expect(instance).
-        to receive(:destroy_one).
-        with(resource_class, resource).
-        and_return(operation)
+        repository.collection(resource_class).delete(resource.id)
+      end # before example
 
-      expect(instance.send :destroy_resource).to be operation
-    end # it
+      it 'should fail with errors' do
+        operation = instance.send(:destroy_resource)
+
+        expect(operation).to be_a Bronze::Operations::OperationChain
+        expect(operation.called?).to be true
+        expect(operation.success?).to be false
+
+        expect(operation.errors[:book]).not_to be_empty
+      end # it
+
+      context 'when the resource has a custom key' do
+        let(:resource_options) { super().merge :resource_key => :tome }
+
+        it 'should fail with errors' do
+          operation = instance.send(:destroy_resource)
+
+          expect(operation).to be_a Bronze::Operations::OperationChain
+          expect(operation.called?).to be true
+          expect(operation.success?).to be false
+
+          expect(operation.errors[:tome]).not_to be_empty
+        end # it
+      end # context
+    end # context
   end # describe
 
   describe '#edit_resource' do
     include_context 'when the resource is defined'
+    include_context 'when the resource exists in the repository'
 
-    let(:resource)  { Spec::Book.new }
-    let(:operation) { Spec::Operation.new(:resources => [resource]).execute }
-    let(:params)    { super().merge :id => resource.id }
+    let(:params) { super().merge :id => resource.id }
 
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:edit_resource)
+    before(:example) { instance.send :require_primary_resource }
 
-      expect(instance).
-        to respond_to(:edit_resource, true).
-        with(0).arguments
+    it 'should return the resource' do
+      operation = instance.send(:edit_resource)
+
+      expect(operation.called?).to be true
+      expect(operation.result).to be == resource
     end # it
 
-    it 'should require the resource' do
-      expect(instance).
-        to receive(:find_one).
-        with(resource_class, params[:id]).
-        and_return(operation)
+    wrap_context 'when the resource has a parent resource' do
+      include_context 'when the parent resource exists in the repository'
 
-      instance.send :require_primary_resource
+      let(:initial_attributes) do
+        super().merge :publisher_id => parent_resource.id
+      end # let
+      let(:params) { super().merge :publisher_id => parent_resource.id }
 
-      expect(instance.send :edit_resource).to be operation
-    end # it
+      before(:example) { instance.send :require_parent_resources }
+
+      it 'should return the resource' do
+        operation = instance.send(:edit_resource)
+
+        expect(operation.called?).to be true
+        expect(operation.result).to be == resource
+        expect(operation.result.publisher).to be == parent_resource
+      end # it
+    end # wrap_context
   end # describe
 
   describe '#index_resources' do
     include_context 'when the resource is defined'
+    include_context 'when many resources exist in the repository'
 
-    let(:operation) { Bronze::Operations::NullOperation.new }
+    it 'should filter the resources' do
+      operation = instance.send(:index_resources)
 
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:index_resources)
-
-      expect(instance).
-        to respond_to(:index_resources, true).
-        with(0).arguments
+      expect(operation).to be_a Bronze::Operations::OperationChain
+      expect(operation.called?).to be true
+      expect(operation.success?).to be true
+      expect(operation.result).to be == resources
     end # it
 
-    it 'should find the matching resources' do
-      expect(instance).
-        to receive(:find_matching).
-        with(resource_class, instance.send(:filter_params)).
-        and_return(operation)
+    describe 'with :matching => selector' do
+      let(:selector) { { :series => 'Venus' } }
+      let(:params)   { super().merge :matching => selector }
+      let(:expected) { resources.select { |obj| obj.series == 'Venus' } }
 
-      expect(instance.send :index_resources).to be operation
-    end # it
+      it 'should filter the resources' do
+        operation = instance.send(:index_resources)
+
+        expect(operation).to be_a Bronze::Operations::OperationChain
+        expect(operation.called?).to be true
+        expect(operation.success?).to be true
+        expect(operation.result).to contain_exactly(*expected)
+      end # it
+    end # describe
+
+    wrap_context 'when the resource has a parent resource' do
+      include_context 'when the parent resource exists in the repository'
+
+      let(:initial_attributes) do
+        super().map { |hsh| hsh.merge :publisher_id => parent_resource.id }
+      end # let
+      let(:params) { super().merge :publisher_id => parent_resource.id }
+
+      before(:example) do
+        instance.send :require_parent_resources
+      end # before example
+
+      it 'should assign the parent resource' do
+        operation = instance.send(:index_resources)
+
+        expect(operation).to be_a Bronze::Operations::OperationChain
+        expect(operation.called?).to be true
+        expect(operation.success?).to be true
+        expect(operation.result).to contain_exactly(*resources)
+
+        operation.result.each do |book|
+          expect(book.publisher).to be == parent_resource
+        end # each
+      end # it
+    end # wrap_context
   end # describe
 
   describe '#new_resource' do
     include_context 'when the resource is defined'
+    include_context 'when all attributes are permitted'
 
-    let(:operation) { Spec::Operation.new }
-
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:new_resource)
-
-      expect(instance).
-        to respond_to(:new_resource, true).
-        with(0).arguments
-    end # it
+    let(:initial_attributes) do
+      {
+        :title  => 'Tales of Three Planets',
+        :series => 'Collected Works'
+      } # end let
+    end # let
+    let(:params) { super().merge :book => initial_attributes }
 
     it 'should build the resource' do
-      expect(instance).
-        to receive(:build_one).
-        with(resource_class, instance.send(:resource_params)).
-        and_return(operation)
+      operation = instance.send(:new_resource)
 
-      expect(instance.send :new_resource).to be operation
+      expect(operation).
+        to be_a Bronze::Entities::Operations::BuildOneOperation
+      expect(operation.entity_class).to be resource_class
+      expect(operation.called?).to be true
+      expect(operation.result).to be_a resource_class
+      expect(operation.result.persisted?).to be false
+      expect(operation.result.attributes).to be >= initial_attributes
     end # it
   end # describe
 
   describe '#show_resource' do
     include_context 'when the resource is defined'
+    include_context 'when the resource exists in the repository'
 
-    let(:resource)  { Spec::Book.new }
-    let(:operation) { Spec::Operation.new(:resources => [resource]).execute }
-    let(:params)    { super().merge :id => resource.id }
+    let(:params) { super().merge :id => resource.id }
 
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:show_resource)
+    before(:example) { instance.send :require_primary_resource }
 
-      expect(instance).
-        to respond_to(:show_resource, true).
-        with(0).arguments
+    it 'should return the resource' do
+      operation = instance.send(:show_resource)
+
+      expect(operation.called?).to be true
+      expect(operation.result).to be == resource
     end # it
 
-    it 'should require the resource' do
-      expect(instance).
-        to receive(:find_one).
-        with(resource_class, params[:id]).
-        and_return(operation)
+    wrap_context 'when the resource has a parent resource' do
+      include_context 'when the parent resource exists in the repository'
 
-      instance.send :require_primary_resource
+      let(:initial_attributes) do
+        super().merge :publisher_id => parent_resource.id
+      end # let
+      let(:params) { super().merge :publisher_id => parent_resource.id }
 
-      expect(instance.send :show_resource).to be operation
-    end # it
+      before(:example) { instance.send :require_parent_resources }
+
+      it 'should return the resource' do
+        operation = instance.send(:show_resource)
+
+        expect(operation.called?).to be true
+        expect(operation.result).to be == resource
+        expect(operation.result.publisher).to be == parent_resource
+      end # it
+    end # wrap_context
   end # describe
 
   describe '#update_resource' do
     include_context 'when the resource is defined'
+    include_context 'when the resource exists in the repository'
+    include_context 'when all attributes are permitted'
 
-    let(:resource) { Spec::Book.new }
-    let(:assign_operation) do
-      Spec::Operation.new(:resources => [resource]).execute
-    end # let
-    let(:validate_operation) do
-      Spec::Operation.new(:resources => [resource]).execute
-    end # let
-    let(:uniqueness_operation) do
-      Spec::Operation.new(:resources => [resource]).execute
-    end # let
-    let(:update_operation) do
-      Spec::Operation.new(:resources => [resource]).execute
-    end # let
+    let(:attributes) { {} }
+    let(:params)     { super().merge :id => resource.id, :book => attributes }
 
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:update_resource)
+    before(:example) { instance.send :require_primary_resource }
 
-      expect(instance).
-        to respond_to(:update_resource, true).
-        with(0).arguments
-    end # it
+    describe 'with invalid params' do
+      let(:attributes) { { :title => nil } }
 
-    it 'should assign, validate and update the resource' do
-      allow(instance).to receive(:primary_resource).and_return(resource)
+      it 'should assign, validate, and update the resource' do
+        operation  = instance.send(:update_resource)
+        repository = instance.send(:repository)
 
-      expect(instance).
-        to receive(:assign_one).
-        with(resource, instance.send(:resource_params)).
-        and_return(assign_operation)
+        expect(operation).
+          to be_a Bronze::Entities::Operations::AssignAndUpdateOneOperation
+        expect(operation.entity_class).to be resource_class
+        expect(operation.repository).to be repository
+        expect(operation.called?).to be true
+        expect(operation.success?).to be false
+        expect(operation.result).to be_a resource_class
+        expect(operation.result.id).to be == resource.id
+        expect(operation.result.attributes_changed?).to be true
+        expect(operation.result.persisted?).to be true
+        expect(operation.result.attributes).to be >= attributes
 
-      expect(instance).
-        to receive(:validate_one).
-        with(assign_operation.resource).
-        and_return(validate_operation)
+        persisted = repository.collection(resource_class).find(resource.id)
+        expect(persisted.attributes).to be >= initial_attributes
+      end # it
+    end # describe
 
-      expect(instance).
-        to receive(:validate_one_uniqueness).
-        with(resource_class, validate_operation.resource).
-        and_return(uniqueness_operation)
+    describe 'with valid params' do
+      let(:attributes) { { :title => 'The Oakdale Affair' } }
 
-      expect(instance).
-        to receive(:update_one).
-        with(resource_class, uniqueness_operation.resource).
-        and_return(update_operation)
+      it 'should assign, validate, and update the resource' do
+        operation  = instance.send(:update_resource)
+        repository = instance.send(:repository)
 
-      expect(instance.send :update_resource).to be update_operation
-    end # it
+        expect(operation).
+          to be_a Bronze::Entities::Operations::AssignAndUpdateOneOperation
+        expect(operation.entity_class).to be resource_class
+        expect(operation.repository).to be repository
+        expect(operation.called?).to be true
+        expect(operation.success?).to be true
+        expect(operation.result).to be_a resource_class
+        expect(operation.result.id).to be == resource.id
+        expect(operation.result.attributes_changed?).to be false
+        expect(operation.result.persisted?).to be true
+        expect(operation.result.attributes).to be >= attributes
+
+        persisted = repository.collection(resource_class).find(resource.id)
+        expect(persisted.attributes).to be >= attributes
+      end # it
+    end # describe
   end # describe
 
   ##############################################################################
   ###                               Callbacks                                ###
   ##############################################################################
-
-  describe '#require_one' do
-    include_context 'when the resource is defined'
-
-    let(:resource)  { Spec::Book.new }
-    let(:operation) { Spec::Operation.new(:resources => [resource]).execute }
-    let(:params)    { super().merge :id => resource.id }
-    let(:resource_definition) do
-      described_class.resource_definition
-    end # let
-
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:require_one)
-
-      expect(instance).
-        to respond_to(:require_one, true).
-        with(2).arguments
-    end # it
-
-    it 'should find the resource' do
-      expect(instance).
-        to receive(:find_one).
-        with(resource_class, params[:id]).
-        and_return(operation)
-
-      expect(
-        instance.send :require_one, resource_definition, params[:id]
-      ).to be operation
-    end # it
-
-    context 'when the resource is missing' do
-      let(:operation) { super().fail! }
-
-      it 'should redirect to the resources path' do
-        allow(instance).to receive(:redirect_to).and_call_original
-
-        expect(instance).
-          to receive(:find_one).
-          with(resource_class, params[:id]).
-          and_return(operation)
-
-        expect(
-          instance.send :require_one, resource_definition, params[:id]
-        ).to be operation
-
-        expect(instance).to have_received(:redirect_to) { |path|
-          expect(path).to be == resource_definition.resources_path
-        } # end redirect_to options
-      end # it
-    end # context
-  end # describe
 
   describe '#require_parent_resources' do
     include_context 'when the resource is defined'
@@ -497,37 +696,47 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
       expect(operation).to be_a Bronze::Operations::NullOperation
       expect(operation.called?).to be true
+      expect(operation.success?).to be true
+      expect(operation.result).to be nil
     end # it
 
     wrap_context 'when the resource has a parent resource' do
-      let(:book)      { Spec::Book.new }
-      let(:operation) { Spec::Operation.new(:resources => [book]).execute }
-      let(:resource_definition) do
-        described_class.resource_definition.parent_resources.last
-      end # let
+      it 'should fail with a missing resource error' do
+        operation = instance.send :require_parent_resources
 
-      it 'should find and assign the parent resource' do
-        expect(instance).
-          to receive(:require_one).
-          with(resource_definition, params[:id]).
-          and_return(operation)
-
-        result = nil
-
-        expect { result = instance.send :require_parent_resources }.
-          to change(instance, :resources).
-          to be == { :book => book }
-
-        expect(result).to be operation
+        expect(operation).to be_a Bronze::Operations::OperationChain
+        expect(operation.called?).to be true
+        expect(operation.success?).to be false
+        expect(operation.result).to be nil
       end # it
+
+      wrap_context 'when the parent resource exists in the repository' do
+        let(:params) { super().merge :publisher_id => parent_resource.id }
+
+        it 'should find and assign the parent resource' do
+          operation = instance.send :require_parent_resources
+
+          expect(operation).to be_a Bronze::Operations::OperationChain
+          expect(operation.called?).to be true
+          expect(operation.success?).to be true
+          expect(operation.result).to be == parent_resource
+        end # it
+
+        it 'should assign the parent resource to #resources' do
+          instance.send :require_parent_resources
+
+          expect(instance.send(:resources).fetch(:publisher)).
+            to be == parent_resource
+        end # it
+      end # wrap_context
     end # wrap_context
   end # describe
 
   describe '#require_primary_resource' do
     include_context 'when the resource is defined'
 
-    let(:resource)  { Spec::Book.new }
-    let(:operation) { Spec::Operation.new(:resources => [resource]).execute }
+    let(:resource) { Spec::Book.new }
+    let(:params)   { super().merge :id => resource.id }
     let(:resource_definition) do
       described_class.resource_definition
     end # let
@@ -540,218 +749,174 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         with(0).arguments
     end # it
 
-    it 'should find and assign the resource' do
-      expect(instance).
-        to receive(:require_one).
-        with(resource_definition, params[:id]).
-        and_return(operation)
+    it 'should not find the resource' do
+      operation = instance.send(:require_primary_resource)
 
-      result = nil
+      expect(operation).to be_a Bronze::Operations::OperationChain
+      expect(operation.called?).to be true
+      expect(operation.success?).to be false
+      expect(operation.result).to be nil
 
-      expect { result = instance.send :require_primary_resource }.
-        to change(instance, :primary_resource).
-        to be operation.resource
+      resources = instance.send(:resources)
 
-      expect(result).to be operation
+      expect(resources).to be_empty
     end # it
+
+    it 'should call the responder with :action => :not_found' do
+      responder = double('responder', :call => nil)
+      expect(responder).to receive(:call).with(:action => :not_found)
+
+      allow(instance).
+        to receive(:build_responder).
+        with(resource_definition).
+        and_return(responder)
+
+      instance.send(:require_primary_resource)
+    end # it
+
+    wrap_context 'when the resource exists in the repository' do
+      it 'should find the resource' do
+        operation = instance.send(:require_primary_resource)
+
+        expect(operation).to be_a Bronze::Operations::OperationChain
+        expect(operation.called?).to be true
+        expect(operation.success?).to be true
+        expect(operation.result).to be == resource
+
+        resources = instance.send(:resources)
+
+        expect(resources[:book]).to be == resource
+        expect(resources[:book].persisted?).to be true
+      end # it
+
+      it 'should not call the responder' do
+        expect(instance).not_to receive(:build_responder)
+
+        instance.send(:require_primary_resource)
+      end # it
+    end # wrap_context
   end # describe
 
   ##############################################################################
   ###                               Operations                               ###
   ##############################################################################
 
-  describe '#assign_one' do
-    let(:resource)   { Spec::Book.new }
-    let(:attributes) { {} }
-
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:assign_one)
-
-      expect(instance).
-        to respond_to(:assign_one, true).
-        with(2).arguments
-    end # it
-
-    it 'should return an operation' do
-      operation = instance.send :assign_one, resource, attributes
-
-      expect(operation).
-        to be_a Patina::Operations::Entities::AssignOneOperation
-      expect(operation.called?).to be true
-    end # it
-  end # describe
-
-  describe '#build_one' do
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:build_one)
-
-      expect(instance).
-        to respond_to(:build_one, true).
-        with(2).arguments
-    end # it
-
-    it 'should return an operation' do
-      operation = instance.send :build_one, resource_class, {}
-
-      expect(operation).
-        to be_a Patina::Operations::Entities::BuildOneOperation
-      expect(operation.resource_class).to be resource_class
-      expect(operation.called?).to be true
-    end # it
-  end # describe
-
-  describe '#destroy_one' do
-    let(:resource) { Spec::Book.new }
-
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:destroy_one)
-
-      expect(instance).
-        to respond_to(:destroy_one, true).
-        with(2).arguments
-    end # it
-
-    it 'should return an operation' do
-      operation = instance.send :destroy_one, resource_class, resource
-
-      expect(operation).
-        to be_a Patina::Operations::Entities::DestroyOneOperation
-      expect(operation.resource_class).to be resource_class
-      expect(operation.called?).to be true
-    end # it
-  end # describe
-
-  describe '#find_matching' do
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:find_matching)
-
-      expect(instance).
-        to respond_to(:find_matching, true).
-        with(2).arguments
-    end # it
-
-    it 'should return an operation' do
-      operation = instance.send :find_matching, resource_class, {}
-
-      expect(operation).
-        to be_a Patina::Operations::Entities::FindMatchingOperation
-      expect(operation.resource_class).to be resource_class
-      expect(operation.called?).to be true
-    end # it
-  end # describe
-
-  describe '#find_one' do
-    let(:resource) { Spec::Book.new }
-
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:find_one)
-
-      expect(instance).
-        to respond_to(:find_one, true).
-        with(2).arguments
-    end # it
-
-    it 'should return an operation' do
-      operation = instance.send :find_one, resource_class, resource.id
-
-      expect(operation).
-        to be_a Patina::Operations::Entities::FindOneOperation
-      expect(operation.resource_class).to be resource_class
-      expect(operation.called?).to be true
-    end # it
-  end # describe
-
-  describe '#insert_one' do
+  describe '#require_one' do
     include_context 'when the resource is defined'
 
     let(:resource) { Spec::Book.new }
+    let(:params)   { super().merge :id => resource.id }
+    let(:resource_definition) do
+      described_class.resource_definition
+    end # let
 
     it 'should define the private method' do
-      expect(instance).not_to respond_to(:insert_one)
+      expect(instance).not_to respond_to(:require_one)
 
-      expect(instance).
-        to respond_to(:insert_one, true).
-        with(2).arguments
+      expect(instance).to respond_to(:require_one, true).with(1).argument
     end # it
 
-    it 'should return an operation' do
-      operation = instance.send :insert_one, resource_class, resource
+    it 'should not find the resource' do
+      operation = instance.send(:require_one, resource_definition)
 
-      expect(operation).
-        to be_a Patina::Operations::Entities::InsertOneOperation
-      expect(operation.resource_class).to be resource_class
+      expect(operation).to be_a Bronze::Operations::OperationChain
+
+      operation.execute(resource.id)
+
       expect(operation.called?).to be true
-    end # it
-  end # describe
-
-  describe '#update_one' do
-    include_context 'when the resource is defined'
-
-    let(:resource) { Spec::Book.new }
-
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:update_one)
-
-      expect(instance).
-        to respond_to(:update_one, true).
-        with(2).arguments
+      expect(operation.success?).to be false
+      expect(operation.result).to be nil
     end # it
 
-    it 'should return an operation' do
-      operation = instance.send :update_one, resource_class, resource
+    it 'should call the responder with :action => :not_found' do
+      responder = double('responder', :call => nil)
+      expect(responder).to receive(:call).with(:action => :not_found)
 
-      expect(operation).
-        to be_a Patina::Operations::Entities::UpdateOneOperation
-      expect(operation.resource_class).to be resource_class
-      expect(operation.called?).to be true
-    end # it
-  end # describe
+      allow(instance).
+        to receive(:build_responder).
+        with(resource_definition).
+        and_return(responder)
 
-  describe '#validate_one' do
-    include_context 'when the resource is defined'
-
-    let(:resource) { Spec::Book.new }
-
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:validate_one)
-
-      expect(instance).
-        to respond_to(:validate_one, true).
-        with(1).argument
+      operation = instance.send(:require_one, resource_definition)
+      operation.execute(resource.id)
     end # it
 
-    it 'should return an operation' do
-      operation = instance.send :validate_one, resource
+    wrap_context 'when the resource exists in the repository' do
+      it 'should find the resource' do
+        operation = instance.send(:require_one, resource_definition)
 
-      expect(operation).
-        to be_a Patina::Operations::Entities::ValidateOneOperation
-      expect(operation.called?).to be true
-    end # it
-  end # describe
+        expect(operation).to be_a Bronze::Operations::OperationChain
 
-  describe '#validate_one_uniqueness' do
-    include_context 'when the resource is defined'
+        operation.execute(resource.id)
 
-    let(:resource) { Spec::Book.new }
+        expect(operation.called?).to be true
+        expect(operation.success?).to be true
+        expect(operation.result).to be == resource
+        expect(operation.result.persisted?).to be true
+      end # it
 
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:validate_one_uniqueness)
+      it 'should not call the responder' do
+        expect(instance).not_to receive(:build_responder)
 
-      expect(instance).
-        to respond_to(:validate_one_uniqueness, true).
-        with(2).arguments
-    end # it
+        operation = instance.send(:require_one, resource_definition)
+        operation.execute(resource.id)
+      end # it
+    end # wrap_context
 
-    it 'should return an operation' do
-      operation =
-        instance.send :validate_one_uniqueness, resource_class, resource
+    describe 'with a resource definition' do
+      include_context 'when the resource has a parent resource'
 
-      expect(operation).
-        to be_a Patina::Operations::Entities::ValidateOneUniquenessOperation
-      expect(operation.resource).to be resource
-      expect(operation.resource_class).to be resource_class
-      expect(operation.called?).to be true
-    end # it
+      let(:parent_definition) do
+        described_class.resource_definition.parent_resources.first
+      end # let
+
+      it 'should not find the resource' do
+        operation = instance.send(:require_one, parent_definition)
+
+        expect(operation).to be_a Bronze::Operations::OperationChain
+
+        operation.execute(resource.id)
+
+        expect(operation.called?).to be true
+        expect(operation.success?).to be false
+        expect(operation.result).to be nil
+      end # it
+
+      it 'should call the responder with :action => :not_found' do
+        responder = double('responder', :call => nil)
+        expect(responder).to receive(:call).with(:action => :not_found)
+
+        allow(instance).
+          to receive(:build_responder).
+          with(parent_definition).
+          and_return(responder)
+
+        operation = instance.send(:require_one, parent_definition)
+        operation.execute(resource.id)
+      end # it
+
+      wrap_context 'when the parent resource exists in the repository' do
+        it 'should find the resource' do
+          operation = instance.send(:require_one, parent_definition)
+
+          expect(operation).to be_a Bronze::Operations::OperationChain
+
+          operation.execute(parent_resource.id)
+
+          expect(operation.called?).to be true
+          expect(operation.success?).to be true
+          expect(operation.result).to be == parent_resource
+          expect(operation.result.persisted?).to be true
+        end # it
+
+        it 'should not call the responder' do
+          expect(instance).not_to receive(:build_responder)
+
+          operation = instance.send(:require_one, parent_definition)
+          operation.execute(parent_resource.id)
+        end # it
+      end # context
+    end # describe
   end # describe
 
   ##############################################################################
@@ -788,32 +953,32 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # describe
 
     wrap_context 'when the resource has a parent resource' do
-      let(:parent_resource) { Spec::Book.new }
+      let(:parent_resource) { Spec::Publisher.new }
 
       before(:example) do
         allow(instance).
           to receive(:resources).
-          and_return(:book => parent_resource)
+          and_return(:publisher => parent_resource)
       end # before example
 
       describe 'with one primary resource' do
-        let(:primary_resource) { Spec::Chapter.new }
+        let(:primary_resource) { Spec::Book.new }
 
         it 'should assign the associations to the primary resource' do
           instance.send :assign_associations, primary_resource
 
-          expect(primary_resource.book).to be parent_resource
+          expect(primary_resource.publisher).to be parent_resource
         end # it
       end # describe
 
       describe 'with many primary resources' do
-        let(:primary_resources) { Array.new(3) { Spec::Chapter.new } }
+        let(:primary_resources) { Array.new(3) { Spec::Book.new } }
 
         it 'should assign the associations to the primary resources' do
           instance.send(:assign_associations, *primary_resources)
 
           primary_resources.each do |primary_resource|
-            expect(primary_resource.book).to be parent_resource
+            expect(primary_resource.publisher).to be parent_resource
           end # each
         end # it
       end # describe
@@ -873,7 +1038,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
   describe '#filter_params' do
     include_context 'when the resource is defined'
 
-    let(:expected) { { 'matching' => {} } }
+    let(:expected) { { :matching => {} } }
 
     it 'should define the private reader' do
       expect(instance).not_to respond_to(:filter_params)
@@ -887,15 +1052,15 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
       let(:params) do
         super().merge :matching => { :title => 'A Princess of Mars' }
       end # let
-      let(:expected) { { 'matching' => { 'title' => 'A Princess of Mars' } } }
+      let(:expected) { { :matching => { 'title' => 'A Princess of Mars' } } }
 
       it { expect(instance.send :filter_params).to be == expected }
     end # describe
 
     wrap_context 'when the resource has a parent resource' do
-      let(:book)     { Spec::Book.new }
-      let(:params)   { super().merge :book_id => book.id }
-      let(:expected) { { 'matching' => { 'book_id' => book.id } } }
+      let(:publisher) { Spec::Book.new }
+      let(:params)    { super().merge :publisher_id => publisher.id }
+      let(:expected)  { { :matching => { 'publisher_id' => publisher.id } } }
 
       it { expect(instance.send :filter_params).to be == expected }
 
@@ -905,9 +1070,9 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         end # let
         let(:expected) do
           {
-            'matching' => {
-              'title'   => 'A Princess of Mars',
-              'book_id' => book.id
+            :matching => {
+              'title'        => 'A Princess of Mars',
+              'publisher_id' => publisher.id
             } # end matching
           } # end expected
         end # let
@@ -915,6 +1080,109 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         it { expect(instance.send :filter_params).to be == expected }
       end # describe
     end # wrap_context
+  end # describe
+
+  describe '#map_errors' do
+    include_context 'when the resource is defined'
+
+    shared_examples 'should map the errors' do
+      before(:example) do
+        allow(operation).to receive(:result).and_return(result)
+      end # before example
+
+      it 'should map the errors' do
+        expect(mapped).to be_a Bronze::Operations::Operation
+
+        expect(mapped.called?).to be true
+        expect(mapped.result).to be result
+        expect(mapped.errors).to be == expected
+      end # it
+    end # shared_examples
+
+    let(:operation) { Bronze::Operations::NullOperation.new.execute }
+    let(:result)    { double('result') }
+    let(:mapped)    { instance.send :map_errors, operation }
+    let(:expected)  { Bronze::Errors.new }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:map_errors)
+
+      expect(instance).to respond_to(:map_errors, true).with(1).argument
+    end # it
+
+    describe 'with an operation with no errors' do
+      include_examples 'should map the errors'
+    end # describe
+
+    describe 'with an operation with general errors' do
+      let(:expected) do
+        super().add('errors.libraries.card_expired')
+      end # let
+
+      before(:example) do
+        operation.errors.add('errors.libraries.card_expired')
+      end # before example
+
+      include_examples 'should map the errors'
+    end # describe
+
+    describe 'with an operation with resource errors' do
+      let(:expected) do
+        super().
+          add('errors.libraries.card_expired').
+          tap do |err|
+            err[:book].add('errors.books.cover_missing')
+            err[:book].add('errors.books.spine_bent')
+          end # tap
+      end # let
+
+      before(:example) do
+        operation.errors.add('errors.libraries.card_expired')
+        operation.errors[:book].add('errors.books.cover_missing')
+        operation.errors[:book].add('errors.books.spine_bent')
+      end # before example
+
+      include_examples 'should map the errors'
+    end # describe
+
+    context 'when the resource has a custom key' do
+      let(:resource_options) { super().merge :resource_key => :tome }
+
+      describe 'with an operation with no errors' do
+        include_examples 'should map the errors'
+      end # describe
+
+      describe 'with an operation with general errors' do
+        let(:expected) do
+          super().add('errors.libraries.card_expired')
+        end # let
+
+        before(:example) do
+          operation.errors.add('errors.libraries.card_expired')
+        end # before example
+
+        include_examples 'should map the errors'
+      end # describe
+
+      describe 'with an operation with resource errors' do
+        let(:expected) do
+          super().
+            add('errors.libraries.card_expired').
+            tap do |err|
+              err[:tome].add('errors.books.cover_missing')
+              err[:tome].add('errors.books.spine_bent')
+            end # tap
+        end # let
+
+        before(:example) do
+          operation.errors.add('errors.libraries.card_expired')
+          operation.errors[:book].add('errors.books.cover_missing')
+          operation.errors[:book].add('errors.books.spine_bent')
+        end # before example
+
+        include_examples 'should map the errors'
+      end # describe
+    end # context
   end # describe
 
   describe '#null_operation' do
@@ -930,6 +1198,69 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # it
   end # descrbe
 
+  describe '#operation_builder' do
+    let(:error_message) { 'unknown builder strategy for nil' }
+
+    it 'should define the private method' do
+      expect(instance).not_to respond_to(:operation_builder)
+
+      expect(instance).
+        to respond_to(:operation_builder, true).
+        with(0..1).arguments
+    end # it
+
+    describe 'with no arguments' do
+      it 'should raise an error' do
+        expect { instance.send(:operation_builder) }.
+          to raise_error ArgumentError, error_message
+      end # it
+
+      wrap_context 'when the resource is defined' do
+        it 'should return an operation builder' do
+          builder = instance.send(:operation_builder)
+
+          expect(builder).
+            to be_a Bronze::Entities::Operations::EntityOperationBuilder
+          expect(builder.entity_class).to be resource_class
+        end # it
+      end # wrap_context
+    end # describe
+
+    describe 'with nil' do
+      it 'should raise an error' do
+        expect { instance.send(:operation_builder, nil) }.
+          to raise_error ArgumentError, error_message
+      end # it
+    end # describe
+
+    describe 'with a resource definition' do
+      include_context 'when the resource is defined'
+
+      it 'should return an operation builder' do
+        resource_definition = described_class.resource_definition
+        builder             =
+          instance.send(:operation_builder, resource_definition)
+
+        expect(builder).
+          to be_a Bronze::Entities::Operations::EntityOperationBuilder
+        expect(builder.entity_class).to be resource_class
+      end # it
+
+      wrap_context 'when the resource has a parent resource' do
+        it 'should return an operation builder' do
+          parent_definition =
+            described_class.resource_definition.parent_resources.first
+          builder           =
+            instance.send(:operation_builder, parent_definition)
+
+          expect(builder).
+            to be_a Bronze::Entities::Operations::EntityOperationBuilder
+          expect(builder.entity_class).to be parent_definition.resource_class
+        end # it
+      end # wrap_context
+    end # describe
+  end # describe
+
   describe '#permitted_attributes' do
     it 'should define the private reader' do
       expect(instance).not_to respond_to(:permitted_attributes)
@@ -943,6 +1274,8 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
   end # describe
 
   describe '#primary_resource' do
+    include_context 'when the resource is defined'
+
     it 'should define the private reader' do
       expect(instance).not_to respond_to(:primary_resource)
 
@@ -1030,11 +1363,11 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # context
 
     wrap_context 'when the resource has a parent resource' do
-      let(:book)     { Spec::Book.new }
-      let(:expected) { { 'book' => book } }
+      let(:publisher) { Spec::Publisher.new }
+      let(:expected)  { { 'publisher' => publisher } }
 
       before(:example) do
-        instance.send(:resources).update(:book => book)
+        instance.send(:resources).update(:publisher => publisher)
       end # before example
 
       it { expect(instance.send :resource_params).to be == expected }
@@ -1043,15 +1376,15 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         let(:attributes) do
           { :title => 'An Unexpected Party' }
         end # let
-        let(:params) { super().merge :chapter => attributes }
+        let(:params) { super().merge :book => attributes }
 
         it { expect(instance.send :resource_params).to be == expected }
 
         wrap_context 'when all attributes are permitted' do
           let(:expected) do
             {
-              'title' => attributes[:title],
-              'book'  => book
+              'title'     => attributes[:title],
+              'publisher' => publisher
             } # end expected attributes
           end # let
 
