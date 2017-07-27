@@ -3,6 +3,7 @@
 require 'rails_helper'
 
 require 'bronze/rails/resources/resource'
+require 'bronze/rails/resources/resource/base_examples'
 
 require 'fixtures/entities/archived_periodical'
 require 'fixtures/entities/book'
@@ -10,6 +11,8 @@ require 'fixtures/entities/chapter'
 require 'fixtures/entities/section'
 
 RSpec.describe Bronze::Rails::Resources::Resource do
+  include Spec::Resources::Resource::BaseExamples
+
   shared_context 'when the resource class has a compound name' do
     let(:resource_class) { Spec::ArchivedPeriodical }
   end # shared_context
@@ -109,9 +112,7 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     described_class.new resource_class, resource_options
   end # let
 
-  describe '::new' do
-    it { expect(described_class).to be_constructible.with(1..2).arguments }
-  end # describe
+  include_examples 'should implement the Resource::Base methods'
 
   describe '#association_key' do
     include_examples 'should have reader',
@@ -448,12 +449,6 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     end # wrap_context
   end # describe
 
-  describe '#resource_class' do
-    include_examples 'should have reader',
-      :resource_class,
-      ->() { resource_class }
-  end # describe
-
   describe '#resource_key' do
     include_examples 'should have reader', :resource_key, :book
 
@@ -504,12 +499,6 @@ RSpec.describe Bronze::Rails::Resources::Resource do
         expect(instance.resource_name).to be == 'archived_periodical'
       end # it
     end # wrap_context
-  end # describe
-
-  describe '#resource_options' do
-    include_examples 'should have reader',
-      :resource_options,
-      ->() { resource_options }
   end # describe
 
   describe '#resource_path' do

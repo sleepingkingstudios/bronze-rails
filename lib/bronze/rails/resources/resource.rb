@@ -3,6 +3,7 @@
 require 'sleeping_king_studios/tools/toolbelt'
 
 require 'bronze/rails/resources'
+require 'bronze/rails/resources/resource/base'
 require 'bronze/rails/services/routes_service'
 
 # rubocop:disable Metrics/ClassLength
@@ -11,24 +12,19 @@ module Bronze::Rails::Resources
   # Object representing a Rails resource. Provides methods to query properties
   # such as resourceful routes and template paths.
   class Resource
+    include Bronze::Rails::Resources::Resource::Base
+
     # @param resource_class [Class] The base class representing instances of the
     #   resource.
     # @param resource_options [Hash] Additional options for the resource.
     def initialize resource_class, resource_options = {}
-      @resource_class   = resource_class
-      @resource_options = resource_options
+      super
 
       process_options
     end # constructor
 
     # @return [Array<Resource>] The parent resource definitions.
     attr_reader :parent_resources
-
-    # @return [Class] The base class representing instances of the resource.
-    attr_reader :resource_class
-
-    # @return [Hash] Additional options for the resource.
-    attr_reader :resource_options
 
     # @see #association_key
     #
