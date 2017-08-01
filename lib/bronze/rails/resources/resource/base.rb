@@ -11,7 +11,7 @@ module Bronze::Rails::Resources
       # @param resource_options [Hash] Additional options for the resource.
       def initialize resource_class, resource_options = {}
         @resource_class   = resource_class
-        @resource_options = resource_options
+        @resource_options = tools.hash.convert_keys_to_symbols(resource_options)
       end # constructor
 
       # @reurn [Class] The base class representing instances of the resource.
@@ -19,6 +19,12 @@ module Bronze::Rails::Resources
 
       # @return [Hash] Additional options for the resource.
       attr_reader :resource_options
+
+      private
+
+      def tools
+        SleepingKingStudios::Tools::Toolbelt.instance
+      end # method tools
     end # module
   end # class
 end # module

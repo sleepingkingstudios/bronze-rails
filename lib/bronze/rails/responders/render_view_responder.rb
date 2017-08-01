@@ -77,9 +77,9 @@ module Bronze::Rails::Responders
     def build_resources_hash operation, many: false
       resource_key =
         if many
-          @resource_definition.plural_resource_key
+          @resource_definition.plural_serialization_key
         else
-          @resource_definition.resource_key
+          @resource_definition.serialization_key
         end # if-else
 
       build_associations_hash.update(resource_key => operation.result)
@@ -251,8 +251,8 @@ module Bronze::Rails::Responders
     end # method respond_to_update_success
 
     def set_flash key, message, now: false
-      flash    = render_context.flash
-      flash    = flash.now if now
+      flash = render_context.flash
+      flash = flash.now if now
 
       (flash[key] ||= []) << message
     end # method set_flash

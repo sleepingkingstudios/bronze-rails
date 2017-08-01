@@ -248,21 +248,27 @@ module Bronze::Rails::Resources
     # rubocop:enable Metrics/MethodLength
 
     # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/MethodLength
     def map_errors operation
       return operation unless operation.errors && !operation.errors.empty?
+      return operation unless resource_definition.serialization_key_changed?
 
-      resource_key = resource_definition.resource_key
-      original_key = resource_definition.resource_class.name.split('::').last
-      original_key = tools.string.underscore(original_key).intern
+      if operation.errors.key?(resource_definition.default_resource_key)
+        operation.errors[resource_definition.serialization_key] =
+          operation.errors.delete(resource_definition.default_resource_key)
+      end # if
 
-      return operation if resource_key == original_key
-      return operation unless operation.errors.key?(original_key)
-
-      operation.errors[resource_key] = operation.errors.delete(original_key)
+      if operation.errors.key?(resource_definition.default_plural_resource_key)
+        operation.errors[resource_definition.plural_serialization_key] =
+          operation.errors.delete(
+            resource_definition.default_plural_resource_key
+          ) # end delete
+      end # if
 
       operation
     end # method map_error
     # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/MethodLength
 
     def null_operation
       Bronze::Operations::NullOperation.new

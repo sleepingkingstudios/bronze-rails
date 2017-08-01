@@ -451,8 +451,8 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         expect(operation.errors[:book]).not_to be_empty
       end # it
 
-      context 'when the resource has a custom key' do
-        let(:resource_options) { super().merge :resource_key => :tome }
+      context 'when the resource has a custom name' do
+        let(:resource_options) { super().merge :resource_name => 'tome' }
 
         it 'should fail with errors' do
           operation = instance.send(:destroy_resource)
@@ -1146,7 +1146,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # describe
 
     context 'when the resource has a custom key' do
-      let(:resource_options) { super().merge :resource_key => :tome }
+      let(:resource_options) { super().merge :resource_name => 'tome' }
 
       describe 'with an operation with no errors' do
         include_examples 'should map the errors'

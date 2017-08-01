@@ -8,9 +8,9 @@ class VeryRareBooksController < ApplicationController
   include Bronze::Rails::Resources::ResourcesController
 
   resource Spec::Book,
-    :controller_name => 'VeryRareBooksController',
-    :resource_key    => :first_edition,
-    :resource_name   => 'rare_books'
+    :controller_name   => 'VeryRareBooksController',
+    :resource_name     => 'rare_books',
+    :serialization_key => :first_edition
 
   private
 

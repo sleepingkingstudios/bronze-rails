@@ -4,6 +4,7 @@ require 'sleeping_king_studios/tools/toolbelt'
 
 require 'bronze/rails/resources'
 require 'bronze/rails/resources/resource/base'
+require 'bronze/rails/resources/resource/names'
 require 'bronze/rails/services/routes_service'
 
 # rubocop:disable Metrics/ClassLength
@@ -13,6 +14,7 @@ module Bronze::Rails::Resources
   # such as resourceful routes and template paths.
   class Resource
     include Bronze::Rails::Resources::Resource::Base
+    include Bronze::Rails::Resources::Resource::Names
 
     # @param resource_class [Class] The base class representing instances of the
     #   resource.
@@ -40,13 +42,6 @@ module Bronze::Rails::Resources
       @resource_options.fetch(:association_name, plural_resource_name).to_s
     end # method association_name
 
-    # The collection or table name used to persist the resource.
-    #
-    # @return [String] The collection name.
-    def collection_name
-      @collection_name ||= tools.string.pluralize(qualified_resource_name)
-    end # method collection_name
-
     # The name of the controller for the resource in underscored format.
     #
     # @return [String] The controller name.
@@ -59,19 +54,6 @@ module Bronze::Rails::Resources
           name.sub(/_controller\z/, '')
         end # controller_name
     end # method controller_name
-
-    def default_resource_key
-      default_resource_name.intern
-    end # method default_resource_key
-
-    def default_resource_name
-      @default_resource_name ||=
-        begin
-          str = tools.string.underscore(@resource_class.name.split('::').last)
-
-          tools.string.singularize(str)
-        end # resource_name
-    end # method default_resource_name
 
     # Returns the default path of the template for the edit action.
     #
@@ -115,63 +97,12 @@ module Bronze::Rails::Resources
       template :new
     end # method new_template
 
-    # @see #plural_resource_name
-    #
-    # @return [Symbol] The plural resource name.
-    def plural_resource_key
-      @plural_resource_key ||=
-        tools.string.pluralize(resource_key.to_s).intern
-    end # method plural_resource_key
-
-    # The short plural name of the resource in underscore-separated form.
-    #
-    # @return [String] The plural resource name.
-    def plural_resource_name
-      @plural_resource_name ||= tools.string.pluralize(resource_name)
-    end # method plural_resource_name
-
     # The primary key of the resource.
     #
     # @return [Symbol] The primary key.
     def primary_key
       @resource_options.fetch :primary_key, :"#{resource_name}_id"
     end # method primary_key
-
-    # The full name of the resource in a standardized, hyphen- and
-    # underscore-separated form.
-    #
-    # @return [String] The qualified name.
-    def qualified_resource_name
-      @qualified_resource_name ||=
-        begin
-          @resource_class.name.split('::').map do |str|
-            tools.string.underscore(str)
-          end.join('-')
-        end # name
-    end # method qualified_resource_name
-
-    # @see #resource_name
-    #
-    # @return [Symbol] The resource name.
-    def resource_key
-      @resource_options.fetch(:resource_key, resource_name).intern
-    end # method resource_key
-
-    # The short name of the resource in underscore-separated form.
-    #
-    # @return [String] The resource name.
-    def resource_name
-      @resource_name ||=
-        begin
-          name =
-            @resource_options.fetch(
-              :resource_name,
-              tools.string.underscore(@resource_class.name.split('::').last)
-            ) # end fetch
-
-          tools.string.singularize(name.to_s)
-        end # resource_name
-    end # method resource_name
 
     # @return [String] The relative path to the resource.
     def resource_path *ancestors, resource_or_id
@@ -281,10 +212,6 @@ module Bronze::Rails::Resources
     def routes
       Bronze::Rails::Services::RoutesService.instance
     end # method routes
-
-    def tools
-      SleepingKingStudios::Tools::Toolbelt.instance
-    end # method tools
   end # class
 end # module
 

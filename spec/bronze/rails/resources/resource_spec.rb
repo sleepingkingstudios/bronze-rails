@@ -4,6 +4,7 @@ require 'rails_helper'
 
 require 'bronze/rails/resources/resource'
 require 'bronze/rails/resources/resource/base_examples'
+require 'bronze/rails/resources/resource/names_examples'
 
 require 'fixtures/entities/archived_periodical'
 require 'fixtures/entities/book'
@@ -12,10 +13,7 @@ require 'fixtures/entities/section'
 
 RSpec.describe Bronze::Rails::Resources::Resource do
   include Spec::Resources::Resource::BaseExamples
-
-  shared_context 'when the resource class has a compound name' do
-    let(:resource_class) { Spec::ArchivedPeriodical }
-  end # shared_context
+  include Spec::Resources::Resource::NamesExamples
 
   shared_context 'when the resource has a namespace' do
     let(:ancestors) do
@@ -114,6 +112,8 @@ RSpec.describe Bronze::Rails::Resources::Resource do
 
   include_examples 'should implement the Resource::Base methods'
 
+  include_examples 'should implement the Resource::Names methods'
+
   describe '#association_key' do
     include_examples 'should have reader',
       :association_key,
@@ -192,58 +192,6 @@ RSpec.describe Bronze::Rails::Resources::Resource do
 
       it { expect(instance.controller_name).to be == 'rare_books' }
     end # context
-  end # describe
-
-  describe '#default_resource_key' do
-    include_examples 'should have reader', :default_resource_key, :book
-
-    context 'when options[:resource_key] is set' do
-      let(:resource_options) { super().merge :resource_key => :tome }
-
-      it { expect(instance.default_resource_key).to be == :book }
-    end # context
-
-    wrap_context 'when the resource class has a compound name' do
-      it 'should return the resource key' do
-        expect(instance.default_resource_key).to be == :archived_periodical
-      end # it
-    end # wrap_context
-  end # describe
-
-  describe '#default_resource_name' do
-    include_examples 'should have reader',
-      :default_resource_name,
-      ->() { be == 'book' }
-
-    context 'when options[:association_name] is a plural string' do
-      let(:resource_options) { super().merge :resource_name => 'tomes' }
-
-      it { expect(instance.default_resource_name).to be == 'book' }
-    end # context
-
-    context 'when options[:association_name] is a plural symbol' do
-      let(:resource_options) { super().merge :resource_name => :tomes }
-
-      it { expect(instance.default_resource_name).to be == 'book' }
-    end # context
-
-    context 'when options[:association_name] is a singular string' do
-      let(:resource_options) { super().merge :resource_name => 'tome' }
-
-      it { expect(instance.default_resource_name).to be == 'book' }
-    end # context
-
-    context 'when options[:association_name] is a singular symbol' do
-      let(:resource_options) { super().merge :resource_name => :tome }
-
-      it { expect(instance.default_resource_name).to be == 'book' }
-    end # context
-
-    wrap_context 'when the resource class has a compound name' do
-      it 'should return the resource name' do
-        expect(instance.default_resource_name).to be == 'archived_periodical'
-      end # it
-    end # wrap_context
   end # describe
 
   describe '#edit_template' do
@@ -398,34 +346,6 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     end # wrap_context
   end # describe
 
-  describe '#plural_resource_key' do
-    include_examples 'should have reader', :plural_resource_key, :books
-
-    context 'when options[:resource_key] is set' do
-      let(:resource_options) { super().merge :resource_key => :tome }
-
-      it { expect(instance.plural_resource_key).to be == :tomes }
-    end # context
-
-    wrap_context 'when the resource class has a compound name' do
-      it 'should return the plural resource key' do
-        expect(instance.plural_resource_key).to be == :archived_periodicals
-      end # it
-    end # wrap_context
-  end # describe
-
-  describe '#plural_resource_name' do
-    include_examples 'should have reader',
-      :plural_resource_name,
-      ->() { be == 'books' }
-
-    wrap_context 'when the resource class has a compound name' do
-      it 'should return the plural resource name' do
-        expect(instance.plural_resource_name).to be == 'archived_periodicals'
-      end # it
-    end # wrap_context
-  end # describe
-
   describe '#primary_key' do
     include_examples 'should have reader', :primary_key, :book_id
 
@@ -445,58 +365,6 @@ RSpec.describe Bronze::Rails::Resources::Resource do
       it 'should return the qualified resource name' do
         expect(instance.qualified_resource_name).
           to be == 'spec-archived_periodical'
-      end # it
-    end # wrap_context
-  end # describe
-
-  describe '#resource_key' do
-    include_examples 'should have reader', :resource_key, :book
-
-    context 'when options[:resource_key] is set' do
-      let(:resource_options) { super().merge :resource_key => :tome }
-
-      it { expect(instance.resource_key).to be == :tome }
-    end # context
-
-    wrap_context 'when the resource class has a compound name' do
-      it 'should return the resource key' do
-        expect(instance.resource_key).to be == :archived_periodical
-      end # it
-    end # wrap_context
-  end # describe
-
-  describe '#resource_name' do
-    include_examples 'should have reader',
-      :resource_name,
-      ->() { be == 'book' }
-
-    context 'when options[:association_name] is a plural string' do
-      let(:resource_options) { super().merge :resource_name => 'tomes' }
-
-      it { expect(instance.resource_name).to be == 'tome' }
-    end # context
-
-    context 'when options[:association_name] is a plural symbol' do
-      let(:resource_options) { super().merge :resource_name => :tomes }
-
-      it { expect(instance.resource_name).to be == 'tome' }
-    end # context
-
-    context 'when options[:association_name] is a singular string' do
-      let(:resource_options) { super().merge :resource_name => 'tome' }
-
-      it { expect(instance.resource_name).to be == 'tome' }
-    end # context
-
-    context 'when options[:association_name] is a singular symbol' do
-      let(:resource_options) { super().merge :resource_name => :tome }
-
-      it { expect(instance.resource_name).to be == 'tome' }
-    end # context
-
-    wrap_context 'when the resource class has a compound name' do
-      it 'should return the resource name' do
-        expect(instance.resource_name).to be == 'archived_periodical'
       end # it
     end # wrap_context
   end # describe
