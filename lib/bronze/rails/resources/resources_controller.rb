@@ -322,7 +322,9 @@ module Bronze::Rails::Resources
     end # method resources
 
     def tools
+      # :nocov:
       SleepingKingStudios::Tools::Toolbelt.instance
+      # :nocov:
     end # method tools
   end # module
 end # module

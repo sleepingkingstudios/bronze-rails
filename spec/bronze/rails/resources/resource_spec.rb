@@ -5,6 +5,7 @@ require 'rails_helper'
 require 'bronze/rails/resources/resource'
 require 'bronze/rails/resources/resource/base_examples'
 require 'bronze/rails/resources/resource/names_examples'
+require 'bronze/rails/resources/resource/templates_examples'
 
 require 'fixtures/entities/archived_periodical'
 require 'fixtures/entities/book'
@@ -14,6 +15,7 @@ require 'fixtures/entities/section'
 RSpec.describe Bronze::Rails::Resources::Resource do
   include Spec::Resources::Resource::BaseExamples
   include Spec::Resources::Resource::NamesExamples
+  include Spec::Resources::Resource::TemplatesExamples
 
   shared_context 'when the resource has a namespace' do
     let(:ancestors) do
@@ -114,6 +116,8 @@ RSpec.describe Bronze::Rails::Resources::Resource do
 
   include_examples 'should implement the Resource::Names methods'
 
+  include_examples 'should implement the Resource::Templates methods'
+
   describe '#association_key' do
     include_examples 'should have reader',
       :association_key,
@@ -194,65 +198,6 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     end # context
   end # describe
 
-  describe '#edit_template' do
-    include_examples 'should have reader',
-      :edit_template,
-      ->() { be == 'books/edit' }
-  end # describe
-
-  describe '#find_parent_resource' do
-    it 'should define the method' do
-      expect(instance).to respond_to(:find_parent_resource).with(1).argument
-    end # it
-
-    it { expect(instance.find_parent_resource :books).to be nil }
-
-    wrap_context 'when the resource has a parent resource' do
-      let(:expected) { instance.parent_resources.first }
-
-      it 'should find the resource' do
-        expect(instance.find_parent_resource :books).to be expected
-      end # it
-
-      context 'when the parent has options[:association_name] set' do
-        let(:ancestors) do
-          super().tap do |ary|
-            ary.first[:association_name] = 'tome'
-          end # tap
-        end # let
-
-        it 'should find the resource' do
-          expect(instance.find_parent_resource :books).to be expected
-        end # it
-
-        it 'should find the resource' do
-          expect(instance.find_parent_resource :tome).to be expected
-        end # it
-      end # context
-    end # wrap_context
-
-    wrap_context 'when the resource has a grandparent and parent resource' do
-      let(:grandparent) { instance.parent_resources.first }
-      let(:parent)      { instance.parent_resources.last }
-
-      it 'should find the grandparent resource' do
-        expect(instance.find_parent_resource :books).to be grandparent
-      end # it
-
-      it 'should find the parent resource' do
-        expect(instance.find_parent_resource :chapters).to be parent
-      end # it
-    end # wrap_context
-
-    wrap_context 'when the resource has a namespace and a parent resource' do
-      let(:expected) { instance.parent_resources.first }
-
-      it 'should find the resource' do
-        expect(instance.find_parent_resource :books).to be expected
-      end # it
-    end # wrap_context
-  end # describe
-
   describe '#foreign_key' do
     include_examples 'should have reader',
       :foreign_key,
@@ -269,18 +214,6 @@ RSpec.describe Bronze::Rails::Resources::Resource do
 
       it { expect(instance.foreign_key).to be == :tome_id }
     end # context
-  end # describe
-
-  describe '#index_template' do
-    include_examples 'should have reader',
-      :index_template,
-      ->() { be == 'books/index' }
-  end # describe
-
-  describe '#new_template' do
-    include_examples 'should have reader',
-      :new_template,
-      ->() { be == 'books/new' }
   end # describe
 
   describe '#parent_resources' do
@@ -520,12 +453,6 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     end # wrap_context
   end # describe
 
-  describe '#show_template' do
-    include_examples 'should have reader',
-      :show_template,
-      ->() { be == 'books/show' }
-  end # describe
-
   describe '#singular_association_key' do
     include_examples 'should have reader',
       :singular_association_key,
@@ -560,72 +487,5 @@ RSpec.describe Bronze::Rails::Resources::Resource do
 
       it { expect(instance.singular_association_name).to be == 'tome' }
     end # context
-  end # describe
-
-  describe '#template' do
-    it { expect(instance).to respond_to(:template).with(1).argument }
-
-    describe 'with the name of an action' do
-      let(:action) { 'defenestrate' }
-
-      it { expect(instance.template action).to be == "books/#{action}" }
-    end # describe
-
-    context 'when options[:association_name] is set' do
-      let(:resource_options) { super().merge :controller_name => 'rare_books' }
-
-      describe 'with the name of an action' do
-        let(:action) { 'defenestrate' }
-
-        it 'should return the template path' do
-          expect(instance.template action).to be == "rare_books/#{action}"
-        end # it
-      end # describe
-    end # context
-
-    wrap_context 'when the resource has a namespace' do
-      describe 'with the name of an action' do
-        let(:action) { 'defenestrate' }
-
-        it { expect(instance.template action).to be == "admin/books/#{action}" }
-      end # describe
-    end # wrap_context
-
-    wrap_context 'when the resource has a compound namespace' do
-      describe 'with the name of an action' do
-        let(:action) { 'defenestrate' }
-
-        it 'should return the template path' do
-          expect(instance.template action).
-            to be == "admin/api/books/#{action}"
-        end # it
-      end # describe
-    end # wrap_context
-
-    wrap_context 'when the resource has a parent resource' do
-      describe 'with the name of an action' do
-        let(:action) { 'defenestrate' }
-
-        it { expect(instance.template action).to be == "chapters/#{action}" }
-      end # describe
-    end # wrap_context
-
-    wrap_context 'when the resource has a grandparent and parent resource' do
-      describe 'with the name of an action' do
-        let(:action) { 'defenestrate' }
-
-        it { expect(instance.template action).to be == "sections/#{action}" }
-      end # describe
-    end # wrap_context
-
-    wrap_context 'when the resource has a namespace and a parent resource' do
-      describe 'with the name of an action' do
-        let(:action) { 'defenestrate' }
-
-        it 'should return the template path' do
-          expect(instance.template action).to be == "admin/chapters/#{action}"
-        end # it
-      end # describe
-    end # wrap_context
   end # describe
 end # describe

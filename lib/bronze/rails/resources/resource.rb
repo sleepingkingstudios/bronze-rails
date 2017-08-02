@@ -5,9 +5,8 @@ require 'sleeping_king_studios/tools/toolbelt'
 require 'bronze/rails/resources'
 require 'bronze/rails/resources/resource/base'
 require 'bronze/rails/resources/resource/names'
+require 'bronze/rails/resources/resource/templates'
 require 'bronze/rails/services/routes_service'
-
-# rubocop:disable Metrics/ClassLength
 
 module Bronze::Rails::Resources
   # Object representing a Rails resource. Provides methods to query properties
@@ -15,6 +14,7 @@ module Bronze::Rails::Resources
   class Resource
     include Bronze::Rails::Resources::Resource::Base
     include Bronze::Rails::Resources::Resource::Names
+    include Bronze::Rails::Resources::Resource::Templates
 
     # @param resource_class [Class] The base class representing instances of the
     #   resource.
@@ -24,6 +24,10 @@ module Bronze::Rails::Resources
 
       process_options
     end # constructor
+
+    # @return [Array<String>] The names of parent resources and/or namespaces,
+    #   from outermost to innermost.
+    attr_reader :namespaces
 
     # @return [Array<Resource>] The parent resource definitions.
     attr_reader :parent_resources
@@ -42,39 +46,6 @@ module Bronze::Rails::Resources
       @resource_options.fetch(:association_name, plural_resource_name).to_s
     end # method association_name
 
-    # The name of the controller for the resource in underscored format.
-    #
-    # @return [String] The controller name.
-    def controller_name
-      @controller_name ||=
-        begin
-          name = @resource_options.fetch(:controller_name, '')
-          name = name.empty? ? plural_resource_name : name
-          name = tools.string.underscore(name)
-          name.sub(/_controller\z/, '')
-        end # controller_name
-    end # method controller_name
-
-    # Returns the default path of the template for the edit action.
-    #
-    # @return [String] The template path.
-    def edit_template
-      template :edit
-    end # method edit_template
-
-    # Finds the parent resource with the given resource key or association key.
-    #
-    # @return [Resource] The requested resource, or nil if the resource is not
-    #   found.
-    def find_parent_resource resource_key
-      expected = resource_key.to_s
-
-      parent_resources.find do |parent|
-        parent.association_name == expected ||
-          parent.plural_resource_name == expected
-      end # find
-    end # method find_parent_resource
-
     # The foreign key of the association from the root resource.
     #
     # @return [Symbol] The foreign key.
@@ -82,20 +53,6 @@ module Bronze::Rails::Resources
       @resource_options.fetch :foreign_key,
         :"#{tools.string.singularize association_name.to_s}_id"
     end # method foreign_keys
-
-    # Returns the default path of the template for the index action.
-    #
-    # @return [String] The template path.
-    def index_template
-      template :index
-    end # method index_template
-
-    # Returns the default path of the template for the new action.
-    #
-    # @return [String] The template path.
-    def new_template
-      template :new
-    end # method new_template
 
     # The primary key of the resource.
     #
@@ -118,13 +75,6 @@ module Bronze::Rails::Resources
       routes.send helper_name, *ancestors
     end # method resources_path
 
-    # Returns the default path of the template for the show action.
-    #
-    # @return [String] The template path.
-    def show_template
-      template :show
-    end # method show_template
-
     # @see #singular_association_name
     #
     # @return [Symbol] The association name.
@@ -141,18 +91,6 @@ module Bronze::Rails::Resources
       tools.string.singularize(association_name)
     end # method singular_association_name
     alias_method :parent_name, :singular_association_name
-
-    # Returns the default path of the template for the given action.
-    #
-    # @param action [String, Symbol] The name of the action.
-    #
-    # @return [String] The template path.
-    def template action
-      @namespaces.
-        reduce('') { |str, name| str << name << '/' } <<
-        controller_name << '/' <<
-        action.to_s
-    end # method template
 
     private
 
@@ -214,5 +152,3 @@ module Bronze::Rails::Resources
     end # method routes
   end # class
 end # module
-
-# rubocop:enable Metrics/ClassLength
