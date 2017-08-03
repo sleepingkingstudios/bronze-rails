@@ -20,6 +20,15 @@ module Bronze::Rails::Resources
       # @return [Hash] Additional options for the resource.
       attr_reader :resource_options
 
+      # @return [Array<Hash>] The parent resources and/or namespaces, from
+      #   outermost to innermost. Each hash should have a :name value, a
+      #   :type value with a value of either :namespace or :resource, and
+      #   optionally a :resource value with a resource definition for the parent
+      #   resource.
+      def namespaces
+        []
+      end # method namespaces
+
       private
 
       def tools

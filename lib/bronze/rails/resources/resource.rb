@@ -29,9 +29,6 @@ module Bronze::Rails::Resources
     #   from outermost to innermost.
     attr_reader :namespaces
 
-    # @return [Array<Resource>] The parent resource definitions.
-    attr_reader :parent_resources
-
     # @see #association_key
     #
     # @return [Symbol] The association name.
@@ -53,6 +50,13 @@ module Bronze::Rails::Resources
       @resource_options.fetch :foreign_key,
         :"#{tools.string.singularize association_name.to_s}_id"
     end # method foreign_keys
+
+    # @return [Array<Resource>] The parent resource definitions.
+    def parent_resources
+      namespaces.
+        select { |hsh| hsh[:type] == :resource }.
+        map { |hsh| hsh[:resource] }
+    end # method parent_resources
 
     # The primary key of the resource.
     #
@@ -94,6 +98,7 @@ module Bronze::Rails::Resources
 
     private
 
+    # rubocop:disable Metrics/AbcSize
     def build_parent_resource ancestor, ancestors
       if ancestor.key?(:resource_definition)
         @parent_resources << ancestor[:resource_definition]
@@ -102,13 +107,15 @@ module Bronze::Rails::Resources
       end # if
 
       options = ancestor.dup.merge(:ancestors => ancestors)
-      klass   = options.delete(:class)
-      parent  = self.class.new(klass, options)
+      parent  = self.class.new(options.delete(:class), options)
 
-      @parent_resources << parent
+      namespaces.
+        find { |hsh| hsh[:name] == ancestor[:name] }.
+        update(:resource => parent)
 
       parent
     end # method build_parent_resource
+    # rubocop:enable Metrics/AbcSize
 
     def build_parent_resources ancestors
       @parent_resources = []
@@ -125,7 +132,8 @@ module Bronze::Rails::Resources
     def path_prefix
       @path_prefix ||=
         begin
-          @ancestor_names.
+          namespaces.
+            map { |hsh| hsh[:name] }.
             map { |name| tools.string.singularize(name) }.
             reduce('') { |str, name| str << name << '_' }
         end # prefix
@@ -141,7 +149,7 @@ module Bronze::Rails::Resources
 
         @ancestor_names << name
 
-        @namespaces << name if ancestor[:type] == :namespace
+        @namespaces << { :name => ancestor[:name], :type => ancestor[:type] }
       end # each
 
       build_parent_resources ancestors

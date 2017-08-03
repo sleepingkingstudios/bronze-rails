@@ -2,13 +2,16 @@
 
 require 'rspec/sleeping_king_studios/concerns/shared_example_group'
 
+require 'bronze/rails/resources/resource/base_examples'
+
 module Spec::Resources
   module Resource; end
 end # module
 
 module Spec::Resources::Resource
   module TemplatesExamples
-    extend RSpec::SleepingKingStudios::Concerns::SharedExampleGroup
+    extend  RSpec::SleepingKingStudios::Concerns::SharedExampleGroup
+    include Spec::Resources::Resource::BaseExamples
 
     shared_examples 'should implement the Resource::Templates methods' do
       describe '#controller_name' do
@@ -65,10 +68,6 @@ module Spec::Resources::Resource
           ->() { be == instance.template(:index) }
       end # describe
 
-      describe '#namespaces' do
-        include_examples 'should have reader', :namespaces, []
-      end # describe
-
       describe '#new_template' do
         include_examples 'should have reader',
           :new_template,
@@ -116,11 +115,8 @@ module Spec::Resources::Resource
           it { expect(instance.template action_name).to be == expected }
         end # context
 
-        context 'when the resource has one namespace' do
-          before(:example) do
-            allow(instance).to receive(:namespaces).and_return(%i(admin))
-          end # before example
-          let(:expected) { 'admin/books/read' }
+        wrap_context 'when the resource has many namespaces' do
+          let(:expected) { 'admin/api/books/read' }
 
           it { expect(instance.template action_name).to be == expected }
 
@@ -128,31 +124,42 @@ module Spec::Resources::Resource
             let(:resource_options) do
               super().merge :controller_name => 'TomesController'
             end # let
-            let(:expected) { 'admin/tomes/read' }
+            let(:expected) { 'admin/api/tomes/read' }
 
             it { expect(instance.template action_name).to be == expected }
           end # context
-        end # context
+        end # wrap_context
 
-        context 'when the resource has many namespaces' do
-          before(:example) do
-            allow(instance).
-              to receive(:namespaces).
-              and_return(%i(admin publishers genres))
-          end # before example
-          let(:expected) { 'admin/publishers/genres/books/read' }
+        wrap_context 'when the resource has a namespace and a parent resource' \
+        do
+          let(:expected) { 'admin/chapters/read' }
 
           it { expect(instance.template action_name).to be == expected }
 
           context 'when options[:controller_name] is set' do
             let(:resource_options) do
-              super().merge :controller_name => 'TomesController'
+              super().merge :controller_name => 'EpisodesController'
             end # let
-            let(:expected) { 'admin/publishers/genres/tomes/read' }
+            let(:expected) { 'admin/episodes/read' }
 
             it { expect(instance.template action_name).to be == expected }
           end # context
-        end # context
+        end # wrap_context
+
+        wrap_context 'when the resource has many parent resources' do
+          let(:expected) { 'sections/read' }
+
+          it { expect(instance.template action_name).to be == expected }
+
+          context 'when options[:controller_name] is set' do
+            let(:resource_options) do
+              super().merge :controller_name => 'PassagesController'
+            end # let
+            let(:expected) { 'passages/read' }
+
+            it { expect(instance.template action_name).to be == expected }
+          end # context
+        end # wrap_context
       end # describe
     end # shared_examples
   end # module

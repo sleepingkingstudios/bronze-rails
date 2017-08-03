@@ -65,47 +65,6 @@ RSpec.describe Bronze::Rails::Resources::Resource do
     end # let
   end # shared_context
 
-  shared_context 'when the resource has a grandparent and parent resource' do
-    let(:ancestors) do
-      [
-        {
-          :name  => :books,
-          :type  => :resource,
-          :class => Spec::Book
-        }, # end books
-        {
-          :name  => :chapters,
-          :type  => :resource,
-          :class => Spec::Chapter
-        } # end chapters
-      ] # end ancestors
-    end # let
-    let(:resource_class) { Spec::Section }
-    let(:resource_options) do
-      super().merge :ancestors => ancestors
-    end # let
-  end # shared_context
-
-  shared_context 'when the resource has a namespace and a parent resource' do
-    let(:ancestors) do
-      [
-        {
-          :name => :admin,
-          :type => :namespace
-        }, # end admin
-        {
-          :name  => :books,
-          :type  => :resource,
-          :class => Spec::Book
-        } # end books
-      ] # end ancestors
-    end # let
-    let(:resource_class) { Spec::Chapter }
-    let(:resource_options) do
-      super().merge :ancestors => ancestors
-    end # let
-  end # shared_context
-
   let(:resource_class)   { Spec::Book }
   let(:resource_options) { {} }
   let(:instance) do
@@ -234,7 +193,7 @@ RSpec.describe Bronze::Rails::Resources::Resource do
       end # it
     end # wrap_context
 
-    wrap_context 'when the resource has a grandparent and parent resource' do
+    wrap_context 'when the resource has many parent resources' do
       let(:book) { Spec::Book.new }
 
       it 'should return the parent and grandparent resources',
@@ -369,7 +328,7 @@ RSpec.describe Bronze::Rails::Resources::Resource do
       end # describe
     end # wrap_context
 
-    wrap_context 'when the resource has a grandparent and parent resource' do
+    wrap_context 'when the resource has many parent resources' do
       let(:chapter)  { Spec::Chapter.new }
       let(:section)  { Spec::Section.new }
       let(:expected) do
@@ -433,7 +392,7 @@ RSpec.describe Bronze::Rails::Resources::Resource do
       end # it
     end # wrap_context
 
-    wrap_context 'when the resource has a grandparent and parent resource' do
+    wrap_context 'when the resource has many parent resources' do
       let(:book)     { Spec::Book.new }
       let(:chapter)  { Spec::Chapter.new }
       let(:expected) { "/books/#{book.id}/chapters/#{chapter.id}/sections" }

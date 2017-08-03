@@ -1,5 +1,6 @@
 # spec/fixtures/entities/chapter.rb
 
+require 'bronze/entities/contracts/entity_contract'
 require 'bronze/entities/entity'
 
 require 'bronze/rails/entity'

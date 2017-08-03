@@ -33,12 +33,6 @@ module Bronze::Rails::Resources
         template :index
       end # method index_template
 
-      # @return [Array<String>] The names of parent resources and/or namespaces,
-      #   from outermost to innermost.
-      def namespaces
-        defined?(super) ? super : []
-      end # method namespaces
-
       # Returns the default path of the template for the new action.
       #
       # @return [String] The template path.
@@ -59,11 +53,12 @@ module Bronze::Rails::Resources
       #
       # @return [String] The template path.
       def template action_name
-        [
-          *namespaces,
-          controller_name,
-          action_name
-        ].join '/'
+        namespaces.
+          select { |hsh| hsh[:type] == :namespace }.
+          map { |hsh| hsh[:name] }.
+          push(controller_name).
+          push(action_name).
+          join '/'
       end # method template
     end # module
   end # class
