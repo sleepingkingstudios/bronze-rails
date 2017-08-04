@@ -5,6 +5,7 @@ require 'sleeping_king_studios/tools/toolbelt'
 require 'bronze/rails/resources'
 require 'bronze/rails/resources/resource/base'
 require 'bronze/rails/resources/resource/names'
+require 'bronze/rails/resources/resource/routing'
 require 'bronze/rails/resources/resource/templates'
 require 'bronze/rails/services/routes_service'
 
@@ -14,6 +15,7 @@ module Bronze::Rails::Resources
   class Resource
     include Bronze::Rails::Resources::Resource::Base
     include Bronze::Rails::Resources::Resource::Names
+    include Bronze::Rails::Resources::Resource::Routing
     include Bronze::Rails::Resources::Resource::Templates
 
     # @param resource_class [Class] The base class representing instances of the
@@ -24,10 +26,6 @@ module Bronze::Rails::Resources
 
       process_options
     end # constructor
-
-    # @return [Array<String>] The names of parent resources and/or namespaces,
-    #   from outermost to innermost.
-    attr_reader :namespaces
 
     # @see #association_key
     #
@@ -69,14 +67,7 @@ module Bronze::Rails::Resources
     def resource_path *ancestors, resource_or_id
       helper_name = "#{path_prefix}#{resource_name}_path"
 
-      routes.send helper_name, *ancestors, resource_or_id
-    end # method resources_path
-
-    # @return [String] The relative path to the resource index.
-    def resources_path *ancestors
-      helper_name = "#{path_prefix}#{plural_resource_name}_path"
-
-      routes.send helper_name, *ancestors
+      routes_service.send helper_name, *ancestors, resource_or_id
     end # method resources_path
 
     # @see #singular_association_name
@@ -129,16 +120,6 @@ module Bronze::Rails::Resources
       end # each
     end # method build_parent_resources
 
-    def path_prefix
-      @path_prefix ||=
-        begin
-          namespaces.
-            map { |hsh| hsh[:name] }.
-            map { |name| tools.string.singularize(name) }.
-            reduce('') { |str, name| str << name << '_' }
-        end # prefix
-    end # method path_prefix
-
     def process_options
       @namespaces     = []
       @ancestor_names = []
@@ -154,9 +135,5 @@ module Bronze::Rails::Resources
 
       build_parent_resources ancestors
     end # method process_options
-
-    def routes
-      Bronze::Rails::Services::RoutesService.instance
-    end # method routes
   end # class
 end # module
