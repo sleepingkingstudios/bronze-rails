@@ -337,6 +337,22 @@ module Spec::Resources::Resource
         end # wrap_context
       end # describe
 
+      describe '#primary_key' do
+        include_examples 'should have reader', :primary_key, :book_id
+
+        context 'when options[:resource_name] is set' do
+          let(:resource_options) { super().merge :resource_name => 'tomes' }
+
+          it { expect(instance.primary_key).to be == :tome_id }
+        end # context
+
+        wrap_context 'when the resource class has a compound name' do
+          it 'should return the primary key' do
+            expect(instance.primary_key).to be == :archived_periodical_id
+          end # it
+        end # wrap_context
+      end # describe
+
       describe '#qualified_resource_name' do
         include_examples 'should have reader',
           :qualified_resource_name,

@@ -308,7 +308,7 @@ module Bronze::Rails::Resources
 
       parent_definition = resource_definition.parent_resources.last
       if parent_definition
-        hsh[parent_definition.singular_association_key] =
+        hsh[parent_definition.association_key] =
           resources[parent_definition.parent_key]
       end # if
 

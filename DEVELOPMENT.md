@@ -7,6 +7,16 @@
 - Move shared Rails file copying to CI step.
 - Refactor Resource to use composition
   - Resource - defines names, associations, relations
+  - ResourceBuilder - handles defining namespaces, parent resources: |
+
+    Resource.new(Chapter) do
+      namespace :admin
+      namespace :api
+
+      parent_resource :books, :class => 'Spec::Book'
+    end # resource
+    # implement e.g. ResourceBuilder.new(resource).instance_exec(&block)
+
   - ResourceRoutes - takes a Resource, defines routes
   - ResourceTemplates - takes a Resource, defines template paths
 

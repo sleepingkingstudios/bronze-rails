@@ -98,6 +98,13 @@ module Bronze::Rails::Resources
           end # if-elsif-else
       end # method plural_serialization_key
 
+      # The primary key of the resource.
+      #
+      # @return [Symbol] The primary key.
+      def primary_key
+        @resource_options.fetch :primary_key, :"#{resource_name}_id"
+      end # method primary_key
+
       # The full name of the resource in a standardized, hyphen- and
       # underscore-separated form.
       #

@@ -3,6 +3,7 @@
 require 'sleeping_king_studios/tools/toolbelt'
 
 require 'bronze/rails/resources'
+require 'bronze/rails/resources/resource/associations'
 require 'bronze/rails/resources/resource/base'
 require 'bronze/rails/resources/resource/names'
 require 'bronze/rails/resources/resource/routing'
@@ -14,6 +15,7 @@ module Bronze::Rails::Resources
   # such as resourceful routes and template paths.
   class Resource
     include Bronze::Rails::Resources::Resource::Base
+    include Bronze::Rails::Resources::Resource::Associations
     include Bronze::Rails::Resources::Resource::Names
     include Bronze::Rails::Resources::Resource::Routing
     include Bronze::Rails::Resources::Resource::Templates
@@ -26,66 +28,6 @@ module Bronze::Rails::Resources
 
       process_options
     end # constructor
-
-    # @see #association_key
-    #
-    # @return [Symbol] The association name.
-    def association_key
-      association_name.intern
-    end # method association_key
-
-    # The name of the association from the root resource.
-    #
-    # @return [String] The association name.
-    def association_name
-      @resource_options.fetch(:association_name, plural_resource_name).to_s
-    end # method association_name
-
-    # The foreign key of the association from the root resource.
-    #
-    # @return [Symbol] The foreign key.
-    def foreign_key
-      @resource_options.fetch :foreign_key,
-        :"#{tools.string.singularize association_name.to_s}_id"
-    end # method foreign_keys
-
-    # @return [Array<Resource>] The parent resource definitions.
-    def parent_resources
-      namespaces.
-        select { |hsh| hsh[:type] == :resource }.
-        map { |hsh| hsh[:resource] }
-    end # method parent_resources
-
-    # The primary key of the resource.
-    #
-    # @return [Symbol] The primary key.
-    def primary_key
-      @resource_options.fetch :primary_key, :"#{resource_name}_id"
-    end # method primary_key
-
-    # @return [String] The relative path to the resource.
-    def resource_path *ancestors, resource_or_id
-      helper_name = "#{path_prefix}#{resource_name}_path"
-
-      routes_service.send helper_name, *ancestors, resource_or_id
-    end # method resources_path
-
-    # @see #singular_association_name
-    #
-    # @return [Symbol] The association name.
-    def singular_association_key
-      singular_association_name.intern
-    end # method singular_association_key
-    alias_method :parent_key, :singular_association_key
-
-    # Returns the singular form of the association name, such as when referring
-    # to the instance of a parent resource.
-    #
-    # @return [String] The association name.
-    def singular_association_name
-      tools.string.singularize(association_name)
-    end # method singular_association_name
-    alias_method :parent_name, :singular_association_name
 
     private
 
