@@ -26,11 +26,12 @@ module Bronze::Rails::Resources
       # @param resource_class [Class] The base class representing instances of
       #   the resource.
       # @param resource_options [Hash] Additional options for the resource.
-      def resource resource_class, resource_options = {}
+      def resource resource_class, resource_options = {}, &block
         @resource_definition =
           Bronze::Rails::Resources::Resource.new(
             resource_class,
-            resource_options
+            resource_options,
+            &block
           ) # end definition
       end # class method resource
 

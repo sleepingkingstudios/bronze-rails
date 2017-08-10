@@ -8,6 +8,7 @@ require 'bronze/rails/resources/resource/associations'
 require 'bronze/rails/resources/resource/associations_examples'
 
 require 'fixtures/entities/book'
+require 'fixtures/entities/chapter'
 
 RSpec.describe Bronze::Rails::Resources::Resource::Associations do
   include Spec::Resources::Resource::AssociationsExamples

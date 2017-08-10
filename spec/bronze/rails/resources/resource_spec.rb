@@ -36,4 +36,37 @@ RSpec.describe Bronze::Rails::Resources::Resource do
   include_examples 'should implement the Resource::Routing methods'
 
   include_examples 'should implement the Resource::Templates methods'
+
+  describe '::new' do
+    describe 'with a block' do
+      let(:resource_class) { Spec::Chapter }
+      let(:instance) do
+        described_class.new(resource_class, resource_options) do
+          namespace :admin
+          namespace :api
+
+          parent_resource Spec::Book
+        end # described_class
+      end # let
+
+      it 'should declare the namespaces' do
+        expect(instance.namespaces.count).to be 3
+
+        namespace = instance.namespaces[0]
+        expect(namespace).to be == { :name => :admin, :type => :namespace }
+
+        namespace = instance.namespaces[1]
+        expect(namespace).to be == { :name => :api, :type => :namespace }
+
+        namespace = instance.namespaces[2]
+        expect(namespace.fetch :name).to be :books
+        expect(namespace.fetch :type).to be :resource
+
+        resource = namespace.fetch(:resource)
+        expect(resource.resource_class).to be Spec::Book
+        expect(resource.resource_name).to be == 'book'
+        expect(resource.namespaces).to be == instance.namespaces[0...-1]
+      end # it
+    end # describe
+  end # describe
 end # describe

@@ -17,39 +17,27 @@ module Spec::Examples
     extend RSpec::SleepingKingStudios::Concerns::SharedExampleGroup
 
     shared_context 'when the resource has a parent resource' do
-      let(:ancestors) do
-        [
-          {
-            :name  => :books,
-            :type  => :resource,
-            :class => Spec::Book
-          } # end books
-        ] # end ancestors
-      end # let
       let(:resource_class) { Spec::Chapter }
-      let(:resource_options) do
-        super().merge :ancestors => ancestors
+      let(:resource_definition) do
+        Bronze::Rails::Resources::Resource.new(
+          resource_class,
+          resource_options
+        ) do
+          parent_resource :books, :class => Spec::Book
+        end # let
       end # let
     end # shared_context
 
     shared_context 'when the resource has a grandparent and parent resource' do
-      let(:ancestors) do
-        [
-          {
-            :name  => :books,
-            :type  => :resource,
-            :class => Spec::Book
-          }, # end books
-          {
-            :name  => :chapters,
-            :type  => :resource,
-            :class => Spec::Chapter
-          } # end chapters
-        ] # end ancestors
-      end # let
       let(:resource_class) { Spec::Section }
-      let(:resource_options) do
-        super().merge :ancestors => ancestors
+      let(:resource_definition) do
+        Bronze::Rails::Resources::Resource.new(
+          resource_class,
+          resource_options
+        ) do
+          parent_resource :books,    :class => Spec::Book
+          parent_resource :chapters, :class => Spec::Chapter
+        end # let
       end # let
     end # shared_context
 

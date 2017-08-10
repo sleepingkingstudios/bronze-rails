@@ -25,57 +25,6 @@ module Bronze::Rails::Resources
     # @param resource_options [Hash] Additional options for the resource.
     def initialize resource_class, resource_options = {}
       super
-
-      process_options
     end # constructor
-
-    private
-
-    # rubocop:disable Metrics/AbcSize
-    def build_parent_resource ancestor, ancestors
-      if ancestor.key?(:resource_definition)
-        @parent_resources << ancestor[:resource_definition]
-
-        return ancestor[:resource_definition]
-      end # if
-
-      options = ancestor.dup.merge(:ancestors => ancestors)
-      parent  = self.class.new(options.delete(:class), options)
-
-      namespaces.
-        find { |hsh| hsh[:name] == ancestor[:name] }.
-        update(:resource => parent)
-
-      parent
-    end # method build_parent_resource
-    # rubocop:enable Metrics/AbcSize
-
-    def build_parent_resources ancestors
-      @parent_resources = []
-
-      ancestors.each.with_index do |ancestor, index|
-        next unless ancestor[:type] == :resource
-
-        parent = build_parent_resource ancestor, ancestors[0...index]
-
-        ancestor[:resource_definition] = parent
-      end # each
-    end # method build_parent_resources
-
-    def process_options
-      @namespaces     = []
-      @ancestor_names = []
-      ancestors       = resource_options.fetch(:ancestors, [])
-
-      ancestors.each do |ancestor|
-        name = ancestor[:name].to_s
-
-        @ancestor_names << name
-
-        @namespaces << { :name => ancestor[:name], :type => ancestor[:type] }
-      end # each
-
-      build_parent_resources ancestors
-    end # method process_options
   end # class
 end # module
