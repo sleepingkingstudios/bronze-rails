@@ -10,7 +10,7 @@ module Bronze::Rails::Responders
 
     def build_message action_name, status = nil
       message_options = {
-        :resource => resource_definition.resource_name,
+        :resource => resource_definition.singular_resource_name,
         :action   => action_name,
         :status   => status
       } # end options

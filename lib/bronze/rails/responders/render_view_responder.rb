@@ -77,7 +77,7 @@ module Bronze::Rails::Responders
         if many
           @resource_definition.plural_serialization_key
         else
-          @resource_definition.serialization_key
+          @resource_definition.singular_serialization_key
         end # if-else
 
       build_associations_hash.update(resource_key => operation.result)

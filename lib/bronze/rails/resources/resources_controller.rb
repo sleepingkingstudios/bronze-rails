@@ -167,7 +167,8 @@ module Bronze::Rails::Resources
     def require_primary_resource
       require_one(resource_definition).
         then do |operation|
-          resources[resource_definition.resource_key] = operation.result
+          resources[resource_definition.singular_resource_key] =
+            operation.result
         end. # then
         execute(params[:id])
     end # method require_primary_resource
@@ -254,16 +255,16 @@ module Bronze::Rails::Resources
       return operation unless operation.errors && !operation.errors.empty?
       return operation unless resource_definition.serialization_key_changed?
 
-      if operation.errors.key?(resource_definition.default_resource_key)
-        operation.errors[resource_definition.serialization_key] =
-          operation.errors.delete(resource_definition.default_resource_key)
+      default_key = resource_definition.default_singular_resource_key
+      if operation.errors.key?(default_key)
+        operation.errors[resource_definition.singular_serialization_key] =
+          operation.errors.delete(default_key)
       end # if
 
-      if operation.errors.key?(resource_definition.default_plural_resource_key)
+      default_key = resource_definition.default_plural_resource_key
+      if operation.errors.key?(default_key)
         operation.errors[resource_definition.plural_serialization_key] =
-          operation.errors.delete(
-            resource_definition.default_plural_resource_key
-          ) # end delete
+          operation.errors.delete(default_key)
       end # if
 
       operation
@@ -287,7 +288,7 @@ module Bronze::Rails::Resources
     end # method permitted_attributes
 
     def primary_resource
-      resources[resource_definition.resource_key]
+      resources[resource_definition.singular_resource_key]
     end # method primary_resource
 
     def resource_names
@@ -297,7 +298,7 @@ module Bronze::Rails::Resources
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/MethodLength
     def resource_params
-      resource_name = resource_definition.resource_name
+      resource_name = resource_definition.singular_resource_name
 
       hsh =
         params.
