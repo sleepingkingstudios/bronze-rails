@@ -4,20 +4,16 @@ require 'bronze/rails/resources'
 
 module Bronze::Rails::Resources
   class Resource
-    # Functionality for determining template paths for a Rails resource.
-    module Templates
-      # The name of the controller for the resource in underscored format.
-      #
-      # @return [String] The controller name.
-      def controller_name
-        @controller_name ||=
-          if @resource_options.key?(:controller_name)
-            tools.string.underscore(@resource_options.fetch(:controller_name)).
-              sub(/_controller\z/, '')
-          else
-            plural_resource_name
-          end # if-else
-      end # method controller_name
+    # Decorator class for determining template paths for a Rails resource.
+    class Templates
+      # @param resource [Bronze::Rails::Resources::Resource] The resource to
+      #   update.
+      def initialize resource
+        @resource = resource
+      end # constructor
+
+      # @return [Bronze::Rails::Resources::Resource] The resource to update.
+      attr_reader :resource
 
       # Returns the default path of the template for the edit action.
       #
@@ -53,10 +49,11 @@ module Bronze::Rails::Resources
       #
       # @return [String] The template path.
       def template action_name
-        namespaces.
+        resource.
+          namespaces.
           select { |hsh| hsh[:type] == :namespace }.
           map { |hsh| hsh[:name] }.
-          push(controller_name).
+          push(resource.controller_name).
           push(action_name).
           join '/'
       end # method template

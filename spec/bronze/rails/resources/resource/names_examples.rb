@@ -54,6 +54,48 @@ module Spec::Resources::Resource
         end # wrap_context
       end # describe
 
+      describe '#controller_name' do
+        include_examples 'should have reader',
+          :controller_name,
+          ->() { be == 'books' }
+
+        context 'when options[:controller_name] is a class name' do
+          let(:resource_options) do
+            super().merge :controller_name => 'TomesController'
+          end # let
+
+          it { expect(instance.controller_name).to be == 'tomes' }
+        end # context
+
+        context 'when options[:controller_name] is a string' do
+          let(:resource_options) do
+            super().merge :controller_name => 'tomes'
+          end # let
+
+          it { expect(instance.controller_name).to be == 'tomes' }
+        end # context
+
+        context 'when options[:controller_name] is a symbol' do
+          let(:resource_options) do
+            super().merge :controller_name => :tomes
+          end # let
+
+          it { expect(instance.controller_name).to be == 'tomes' }
+        end # context
+
+        context 'when options[:plural_resource_name] is set' do
+          let(:resource_options) { super().merge :resource_name => :tomes }
+
+          it { expect(instance.controller_name).to be == 'tomes' }
+        end # context
+
+        context 'when options[:resource_name] is set' do
+          let(:resource_options) { super().merge :resource_name => :tome }
+
+          it { expect(instance.controller_name).to be == 'tomes' }
+        end # context
+      end # describe
+
       describe '#default_plural_resource_key' do
         include_examples 'should have reader',
           :default_plural_resource_key,

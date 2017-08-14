@@ -1,5 +1,6 @@
 # lib/bronze/rails/responders/render_view_responder.rb
 
+require 'bronze/rails/resources/resource/templates'
 require 'bronze/rails/responders/errors'
 require 'bronze/rails/responders/messages'
 require 'bronze/rails/responders/responder'
@@ -122,6 +123,11 @@ module Bronze::Rails::Responders
       ) # end render
     end # method render_template
 
+    def resource_templates
+      @resource_templates ||=
+        Bronze::Rails::Resources::Resource::Templates.new(@resource_definition)
+    end # method resource_templates
+
     def respond_to_create_failure operation
       options =
         options_for_invalid_resource(operation).
@@ -133,7 +139,7 @@ module Bronze::Rails::Responders
           :messages => { :warning => build_message(:create, :failure) }
         ) # end update
 
-      render_template @resource_definition.new_template, options
+      render_template resource_templates.new_template, options
     end # method respond_to_create_failure
 
     def respond_to_create_success operation
@@ -170,7 +176,7 @@ module Bronze::Rails::Responders
           } # end locals
         ) # end update
 
-      render_template @resource_definition.edit_template, options
+      render_template resource_templates.edit_template, options
     end # method respond_to_edit_success
 
     def respond_to_index_failure _operation
@@ -184,7 +190,7 @@ module Bronze::Rails::Responders
       options =
         { :resources => build_resources_hash(operation, :many => true) }
 
-      render_template @resource_definition.index_template, options
+      render_template resource_templates.index_template, options
     end # method respond_to_index_success
 
     def respond_to_new_failure _operation
@@ -203,7 +209,7 @@ module Bronze::Rails::Responders
           } # end locals
         ) # end update
 
-      render_template @resource_definition.new_template, options
+      render_template resource_templates.new_template, options
     end # method respond_to_new_success
 
     def respond_to_not_found _operation
@@ -221,7 +227,7 @@ module Bronze::Rails::Responders
     def respond_to_show_success operation
       options = { :resources => build_resources_hash(operation) }
 
-      render_template @resource_definition.show_template, options
+      render_template resource_templates.show_template, options
     end # method respond_to_show_success
 
     def respond_to_update_failure operation
@@ -235,7 +241,7 @@ module Bronze::Rails::Responders
           :messages => { :warning => build_message(:update, :failure) }
         ) # end update
 
-      render_template @resource_definition.edit_template, options
+      render_template resource_templates.edit_template, options
     end # method respond_to_update_failure
 
     def respond_to_update_success operation

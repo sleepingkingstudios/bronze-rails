@@ -1,7 +1,5 @@
 # lib/bronze/rails/resources/resource/routing.rb
 
-require 'sleeping_king_studios/tools/toolbox/delegator'
-
 require 'bronze/rails/resources'
 require 'bronze/rails/services/routes_service'
 
@@ -9,8 +7,6 @@ module Bronze::Rails::Resources
   class Resource
     # Decorator class for determining routing paths for a Rails resource.
     class Routing
-      extend SleepingKingStudios::Tools::Toolbox::Delegator
-
       # @param resource [Bronze::Rails::Resources::Resource] The resource to
       #   update.
       def initialize resource
@@ -19,8 +15,6 @@ module Bronze::Rails::Resources
 
       # @return [Bronze::Rails::Resources::Resource] The resource to update.
       attr_reader :resource
-
-      delegate :namespaces, :to => :resource
 
       # Generates the relative URL for the interface for editing an existing
       # entity for the resource, which typically corresponds to the GET #edit
@@ -102,6 +96,7 @@ module Bronze::Rails::Resources
 
       def path_prefix
         @path_prefix ||=
+          resource.
           namespaces.
           map { |hsh| tools.string.singularize(hsh[:name]) }.
           reduce('') { |str, name| str << name << '_' }

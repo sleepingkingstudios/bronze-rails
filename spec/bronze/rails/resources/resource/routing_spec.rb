@@ -140,22 +140,6 @@ RSpec.describe Bronze::Rails::Resources::Resource::Routing do
     end # wrap_context
   end # describe
 
-  describe '#namespaces' do
-    include_examples 'should have reader', :namespaces, []
-
-    wrap_context 'when the resource has many namespaces' do
-      it { expect(instance.namespaces).to be == resource.namespaces }
-    end # include_examples
-
-    wrap_context 'when the resource has a namespace and a parent resource' do
-      it { expect(instance.namespaces).to be == resource.namespaces }
-    end # wrap_context
-
-    wrap_context 'when the resource has many parent resources' do
-      it { expect(instance.namespaces).to be == resource.namespaces }
-    end # wrap_context
-  end # describe
-
   describe '#new_resource_path' do
     let(:expected) { '/books/new' }
 

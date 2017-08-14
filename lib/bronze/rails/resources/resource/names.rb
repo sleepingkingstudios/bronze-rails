@@ -5,7 +5,7 @@ require 'bronze/rails/resources'
 module Bronze::Rails::Resources
   class Resource
     # Functionality for resource names and variations for a Rails resource.
-    module Names
+    module Names # rubocop:disable Metrics/ModuleLength
       # The collection or table name used to persist the resource.
       #
       # @return [String] The collection name.
@@ -17,6 +17,19 @@ module Bronze::Rails::Resources
             tools.string.pluralize(qualified_resource_name)
           end # if-else
       end # method collection_name
+
+      # The name of the controller for the resource in underscored format.
+      #
+      # @return [String] The controller name.
+      def controller_name
+        @controller_name ||=
+          if @resource_options.key?(:controller_name)
+            tools.string.underscore(@resource_options.fetch(:controller_name)).
+              sub(/_controller\z/, '')
+          else
+            plural_resource_name
+          end # if-else
+      end # method controller_name
 
       # @return [Symbol] The default short name of the resource as a plural,
       #   underscore-separated symbol. The default name is based on the name of
