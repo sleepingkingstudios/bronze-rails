@@ -6,7 +6,6 @@ require 'bronze/rails/resources'
 require 'bronze/rails/resources/resource/associations'
 require 'bronze/rails/resources/resource/base'
 require 'bronze/rails/resources/resource/names'
-require 'bronze/rails/resources/resource/routing'
 require 'bronze/rails/resources/resource/templates'
 require 'bronze/rails/services/routes_service'
 
@@ -17,7 +16,6 @@ module Bronze::Rails::Resources
     include Bronze::Rails::Resources::Resource::Base
     include Bronze::Rails::Resources::Resource::Associations
     include Bronze::Rails::Resources::Resource::Names
-    include Bronze::Rails::Resources::Resource::Routing
     include Bronze::Rails::Resources::Resource::Templates
 
     # @param resource_class [Class] The base class representing instances of the

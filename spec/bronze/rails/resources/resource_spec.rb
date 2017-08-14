@@ -6,7 +6,6 @@ require 'bronze/rails/resources/resource'
 require 'bronze/rails/resources/resource/associations_examples'
 require 'bronze/rails/resources/resource/base_examples'
 require 'bronze/rails/resources/resource/names_examples'
-require 'bronze/rails/resources/resource/routing_examples'
 require 'bronze/rails/resources/resource/templates_examples'
 
 require 'fixtures/entities/archived_periodical'
@@ -18,7 +17,6 @@ RSpec.describe Bronze::Rails::Resources::Resource do
   include Spec::Resources::Resource::BaseExamples
   include Spec::Resources::Resource::AssociationsExamples
   include Spec::Resources::Resource::NamesExamples
-  include Spec::Resources::Resource::RoutingExamples
   include Spec::Resources::Resource::TemplatesExamples
 
   let(:resource_class)   { Spec::Book }
@@ -32,8 +30,6 @@ RSpec.describe Bronze::Rails::Resources::Resource do
   include_examples 'should implement the Resource::Associations methods'
 
   include_examples 'should implement the Resource::Names methods'
-
-  include_examples 'should implement the Resource::Routing methods'
 
   include_examples 'should implement the Resource::Templates methods'
 

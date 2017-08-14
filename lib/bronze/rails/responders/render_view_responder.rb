@@ -3,15 +3,12 @@
 require 'bronze/rails/responders/errors'
 require 'bronze/rails/responders/messages'
 require 'bronze/rails/responders/responder'
-require 'bronze/rails/services/routes_service'
 
 module Bronze::Rails::Responders
-  # rubocop:disable Metrics/ClassLength
-
   # Responder for the omakase Rails behavior, e.g. an application or action that
   # renders a Rails template or redirects to another page within the
   # application.
-  class RenderViewResponder < Responder
+  class RenderViewResponder < Responder # rubocop:disable Metrics/ClassLength
     include Bronze::Rails::Responders::Errors
     include Bronze::Rails::Responders::Messages
 
@@ -100,6 +97,10 @@ module Bronze::Rails::Responders
       } # end options
     end # method options_for_valid_resource
 
+    def parent_redirect_path
+      resource_routing.parent_resources_path(*ancestors[0...-1])
+    end # method parent_redirect_path
+
     def redirect_to redirect_path, options = {}
       options.fetch(:messages, []).
         each { |key, value| set_flash key, value }
@@ -173,15 +174,8 @@ module Bronze::Rails::Responders
     end # method respond_to_edit_success
 
     def respond_to_index_failure _operation
-      parent        = @resource_definition.parent_resources.last
-      redirect_path =
-        if parent
-          parent.resources_path(*ancestors[0...-1])
-        else
-          Bronze::Rails::Services::RoutesService.instance.root_path
-        end # if-else
-
-      messages = { :warning => build_message(:index, :failure) }
+      redirect_path = parent_redirect_path
+      messages      = { :warning => build_message(:index, :failure) }
 
       redirect_to(redirect_path, :messages => messages)
     end # method respond_to_index_failure
@@ -257,6 +251,4 @@ module Bronze::Rails::Responders
       (flash[key] ||= []) << message
     end # method set_flash
   end # class
-
-  # rubocop:enable Metrics/ClassLength
 end # module
