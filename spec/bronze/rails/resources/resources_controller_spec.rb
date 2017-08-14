@@ -13,22 +13,15 @@ require 'support/mocks/operation'
 RSpec.describe Bronze::Rails::Resources::ResourcesController do
   shared_context 'when the resource is defined' do
     before(:example) do
-      described_class.resource resource_class, resource_options
+      described_class.resource resource_class, resource_options, &resource_block
     end # before example
   end # shared_context
 
   shared_context 'when the resource has a parent resource' do
-    let(:ancestors) do
-      [
-        {
-          :name  => :publishers,
-          :type  => :resource,
-          :class => Spec::Publisher
-        } # end books
-      ] # end ancestors
-    end # let
-    let(:resource_options) do
-      super().merge :ancestors => ancestors
+    let(:resource_block) do
+      lambda do
+        parent_resource :publishers, :class => Spec::Publisher
+      end # lambda
     end # let
   end # shared_context
 
@@ -145,6 +138,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
 
   let(:resource_class)   { Spec::Book }
   let(:resource_options) { {} }
+  let(:resource_block)   { ->() {} }
   let(:described_class) do
     Class.new(Spec::Controller) do
       include Bronze::Rails::Resources::ResourcesController
@@ -451,8 +445,8 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         expect(operation.errors[:book]).not_to be_empty
       end # it
 
-      context 'when the resource has a custom key' do
-        let(:resource_options) { super().merge :resource_key => :tome }
+      context 'when the resource has a custom name' do
+        let(:resource_options) { super().merge :resource_name => 'tome' }
 
         it 'should fail with errors' do
           operation = instance.send(:destroy_resource)
@@ -1146,7 +1140,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
     end # describe
 
     context 'when the resource has a custom key' do
-      let(:resource_options) { super().merge :resource_key => :tome }
+      let(:resource_options) { super().merge :resource_name => 'tome' }
 
       describe 'with an operation with no errors' do
         include_examples 'should map the errors'

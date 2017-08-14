@@ -1,11 +1,11 @@
-# lib/bronze/rails/resources/resource_strategy.rb
+# lib/bronze/rails/resources/operation_strategy.rb
 
 require 'bronze/rails/resources'
 
 module Bronze::Rails::Resources
   # Strategy class for mapping a resource class to an operation builder that can
   # be used to perform resourceful actions.
-  module ResourceStrategy
+  module OperationStrategy
     class << self
       # Maps the given resource class to an operation builder conforming to a
       # standard interface.

@@ -1,21 +1,24 @@
 # Development
 
-- MessageBuilder
-  - implement messages
-    - "Successfully actioned resource"
-    - "Unable to action resource"
-    - defaults to
-      I18n.t('resources.:resource_name.:action_name.:status', :locale => locale)
-    - falls back to I18n.t('resources.:action_name.:status', :resource => resource_name, :locale => locale)
-  - support API responses
-- ResourcesController
-  - ::resource :only, :except, :api, :views - filter actions
-    - make excluded actions private?
-  - #operation_builder - support different types of operations
-    - ActiveRecordOperationBuilder?
 - Responders
-  - RenderViewResponder: pass messages to flash
+  - extract error key mapping to Responders::Errors.
   - JsonResponder: builds a JSON api response
+- Add specs for Rails 5.1
+- Move shared Rails file copying to CI step.
+- Refactor Resource to use composition
+  - Resource - defines names, associations, relations
+  - ResourceBuilder - handles defining namespaces, parent resources: |
+
+    Resource.new(Chapter) do
+      namespace :admin
+      namespace :api
+
+      parent_resource :books, :class => 'Spec::Book'
+    end # resource
+    # implement e.g. ResourceBuilder.new(resource).instance_exec(&block)
+
+  - ResourceRoutes - takes a Resource, defines routes
+  - ResourceTemplates - takes a Resource, defines template paths
 
 ## Future Work
 

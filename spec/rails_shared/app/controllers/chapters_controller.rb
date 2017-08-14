@@ -8,15 +8,9 @@ require 'fixtures/entities/chapter'
 class ChaptersController < ApplicationController
   include Bronze::Rails::Resources::ResourcesController
 
-  resource Spec::Chapter,
-    :ancestors =>
-      [
-        {
-          :name  => :books,
-          :type  => :resource,
-          :class => Spec::Book
-        } # end books
-      ] # end ancestors
+  resource Spec::Chapter do
+    parent_resource :books, :class => Spec::Book
+  end # resource
 
   private
 

@@ -45,7 +45,7 @@ RSpec.describe Bronze::Rails::Responders::Messages do
     end # let
     let(:expected) do
       options = {
-        :resource => resource_name,
+        :resource => resource_definition.singular_resource_name,
         :action   => action_name,
         :status   => status
       } # end options

@@ -2,6 +2,7 @@
 
 require 'sleeping_king_studios/tools/toolbelt'
 
+require 'bronze/rails/resources/resource_routing'
 require 'bronze/rails/responders'
 
 module Bronze::Rails::Responders
@@ -35,12 +36,17 @@ module Bronze::Rails::Responders
     end # method ancestors
 
     def resource_path resource
-      @resource_definition.resource_path(*ancestors, resource)
+      resource_routing.resource_path(*ancestors, resource)
     end # method resource_path
 
     def resources_path
-      @resource_definition.resources_path(*ancestors)
+      resource_routing.resources_path(*ancestors)
     end # method resources_path
+
+    def resource_routing
+      @resource_routing ||=
+        Bronze::Rails::Resources::ResourceRouting.new(@resource_definition)
+    end # method resource_routing
 
     def tools
       # :nocov:

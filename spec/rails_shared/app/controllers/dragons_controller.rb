@@ -8,16 +8,11 @@ require 'fixtures/entities/dungeon'
 class DragonsController < ApplicationController
   include Bronze::Rails::Resources::ResourcesController
 
-  resource Spec::Dragon,
-    :ancestors =>
-      [
-        {
-          :name  => :dungeons,
-          :type  => :resource,
-          :class => Spec::Dungeon,
-          :association_name => :lair
-        } # end dungeons
-      ] # end ancestors
+  resource Spec::Dragon do
+    parent_resource :dungeons,
+      :class            => Spec::Dungeon,
+      :association_name => :lair
+  end # resource
 
   private
 

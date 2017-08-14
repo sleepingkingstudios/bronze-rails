@@ -2,6 +2,7 @@
 
 require 'rails_helper'
 
+require 'bronze/rails/resources/resource_routing'
 require 'bronze/rails/responders/render_view_responder'
 require 'bronze/rails/responders/responder_examples'
 
@@ -15,6 +16,9 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
   let(:resource_options) { {} }
   let(:resource_definition) do
     Bronze::Rails::Resources::Resource.new resource_class, resource_options
+  end # let
+  let(:resource_routing) do
+    Bronze::Rails::Resources::ResourceRouting.new(resource_definition)
   end # let
   let(:resources)        { {} }
   let(:instance_options) { { :resources => resources } }
@@ -284,7 +288,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       end # before example
 
       include_examples 'should redirect to',
-        ->() { resource_definition.resources_path },
+        ->() { resource_routing.resources_path },
         :as => 'resources path'
 
       it 'should set the flash' do
@@ -322,7 +326,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       let(:success) { true }
 
       include_examples 'should redirect to',
-        ->() { resource_definition.resource_path operation.result },
+        ->() { resource_routing.resource_path operation.result },
         :as => 'resource path'
 
       it 'should set the flash' do
@@ -336,7 +340,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       let(:action) { :destroy }
 
       include_examples 'should redirect to',
-        ->() { resource_definition.resources_path },
+        ->() { resource_routing.resources_path },
         :as => 'resources path'
 
       it 'should set the flash' do
@@ -351,7 +355,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       let(:success) { true }
 
       include_examples 'should redirect to',
-        ->() { resource_definition.resources_path },
+        ->() { resource_routing.resources_path },
         :as => 'resources path'
 
       it 'should set the flash' do
@@ -365,7 +369,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       let(:action) { :edit }
 
       include_examples 'should redirect to',
-        ->() { resource_definition.resources_path },
+        ->() { resource_routing.resources_path },
         :as => 'resources path'
 
       it 'should set the flash' do
@@ -414,9 +418,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
 
       wrap_context 'when the resource has a parent resource' do
         let(:parent) { resource_definition.parent_resources.last }
+        let(:parent_routing) do
+          Bronze::Rails::Resources::ResourceRouting.new(parent)
+        end # let
 
         include_examples 'should redirect to',
-          ->() { parent.resources_path },
+          ->() { parent_routing.resources_path },
           :as => 'parent resources path'
       end # wrap_context
 
@@ -424,9 +431,12 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
         let(:book)      { Spec::Book.new }
         let(:parent)    { resource_definition.parent_resources.last }
         let(:resources) { { :book => book } }
+        let(:parent_routing) do
+          Bronze::Rails::Resources::ResourceRouting.new(parent)
+        end # let
 
         include_examples 'should redirect to',
-          ->() { parent.resources_path(book) },
+          ->() { parent_routing.resources_path(book) },
           :as => 'parent resources path'
       end # wrap_context
     end # describe
@@ -454,7 +464,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       let(:action) { :new }
 
       include_examples 'should redirect to',
-        ->() { resource_definition.resources_path },
+        ->() { resource_routing.resources_path },
         :as => 'resources path'
 
       it 'should set the flash' do
@@ -492,7 +502,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       let(:action) { :show }
 
       include_examples 'should redirect to',
-        ->() { resource_definition.resources_path },
+        ->() { resource_routing.resources_path },
         :as => 'resources path'
 
       it 'should set the flash' do
@@ -549,7 +559,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       let(:success) { true }
 
       include_examples 'should redirect to',
-        ->() { resource_definition.resource_path(operation.result) },
+        ->() { resource_routing.resource_path(operation.result) },
         :as => 'resource path'
 
       it 'should set the flash' do

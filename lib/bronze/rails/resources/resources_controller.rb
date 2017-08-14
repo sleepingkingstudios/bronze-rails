@@ -7,7 +7,7 @@ require 'bronze/operations/identity_operation'
 require 'bronze/operations/null_operation'
 
 require 'bronze/rails/resources/resource'
-require 'bronze/rails/resources/resource_strategy'
+require 'bronze/rails/resources/operation_strategy'
 require 'bronze/rails/responders/render_view_responder'
 
 # rubocop:disable Metrics/ModuleLength
@@ -26,11 +26,12 @@ module Bronze::Rails::Resources
       # @param resource_class [Class] The base class representing instances of
       #   the resource.
       # @param resource_options [Hash] Additional options for the resource.
-      def resource resource_class, resource_options = {}
+      def resource resource_class, resource_options = {}, &block
         @resource_definition =
           Bronze::Rails::Resources::Resource.new(
             resource_class,
-            resource_options
+            resource_options,
+            &block
           ) # end definition
       end # class method resource
 
@@ -166,7 +167,8 @@ module Bronze::Rails::Resources
     def require_primary_resource
       require_one(resource_definition).
         then do |operation|
-          resources[resource_definition.resource_key] = operation.result
+          resources[resource_definition.singular_resource_key] =
+            operation.result
         end. # then
         execute(params[:id])
     end # method require_primary_resource
@@ -248,21 +250,27 @@ module Bronze::Rails::Resources
     # rubocop:enable Metrics/MethodLength
 
     # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/MethodLength
     def map_errors operation
       return operation unless operation.errors && !operation.errors.empty?
+      return operation unless resource_definition.serialization_key_changed?
 
-      resource_key = resource_definition.resource_key
-      original_key = resource_definition.resource_class.name.split('::').last
-      original_key = tools.string.underscore(original_key).intern
+      default_key = resource_definition.default_singular_resource_key
+      if operation.errors.key?(default_key)
+        operation.errors[resource_definition.singular_serialization_key] =
+          operation.errors.delete(default_key)
+      end # if
 
-      return operation if resource_key == original_key
-      return operation unless operation.errors.key?(original_key)
-
-      operation.errors[resource_key] = operation.errors.delete(original_key)
+      default_key = resource_definition.default_plural_resource_key
+      if operation.errors.key?(default_key)
+        operation.errors[resource_definition.plural_serialization_key] =
+          operation.errors.delete(default_key)
+      end # if
 
       operation
     end # method map_error
     # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/MethodLength
 
     def null_operation
       Bronze::Operations::NullOperation.new
@@ -272,7 +280,7 @@ module Bronze::Rails::Resources
       resource_definition ||= self.resource_definition
       resource_class        = resource_definition&.resource_class
 
-      Bronze::Rails::Resources::ResourceStrategy.for(resource_class)
+      Bronze::Rails::Resources::OperationStrategy.for(resource_class)
     end # method operation_builder
 
     def permitted_attributes
@@ -280,7 +288,7 @@ module Bronze::Rails::Resources
     end # method permitted_attributes
 
     def primary_resource
-      resources[resource_definition.resource_key]
+      resources[resource_definition.singular_resource_key]
     end # method primary_resource
 
     def resource_names
@@ -290,7 +298,7 @@ module Bronze::Rails::Resources
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/MethodLength
     def resource_params
-      resource_name = resource_definition.resource_name
+      resource_name = resource_definition.singular_resource_name
 
       hsh =
         params.
@@ -302,7 +310,7 @@ module Bronze::Rails::Resources
 
       parent_definition = resource_definition.parent_resources.last
       if parent_definition
-        hsh[parent_definition.singular_association_key] =
+        hsh[parent_definition.association_key] =
           resources[parent_definition.parent_key]
       end # if
 
@@ -316,7 +324,9 @@ module Bronze::Rails::Resources
     end # method resources
 
     def tools
+      # :nocov:
       SleepingKingStudios::Tools::Toolbelt.instance
+      # :nocov:
     end # method tools
   end # module
 end # module

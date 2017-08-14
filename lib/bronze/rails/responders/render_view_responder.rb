@@ -1,17 +1,15 @@
 # lib/bronze/rails/responders/render_view_responder.rb
 
+require 'bronze/rails/resources/resource_templates'
 require 'bronze/rails/responders/errors'
 require 'bronze/rails/responders/messages'
 require 'bronze/rails/responders/responder'
-require 'bronze/rails/services/routes_service'
 
 module Bronze::Rails::Responders
-  # rubocop:disable Metrics/ClassLength
-
   # Responder for the omakase Rails behavior, e.g. an application or action that
   # renders a Rails template or redirects to another page within the
   # application.
-  class RenderViewResponder < Responder
+  class RenderViewResponder < Responder # rubocop:disable Metrics/ClassLength
     include Bronze::Rails::Responders::Errors
     include Bronze::Rails::Responders::Messages
 
@@ -77,9 +75,9 @@ module Bronze::Rails::Responders
     def build_resources_hash operation, many: false
       resource_key =
         if many
-          @resource_definition.plural_resource_key
+          @resource_definition.plural_serialization_key
         else
-          @resource_definition.resource_key
+          @resource_definition.singular_serialization_key
         end # if-else
 
       build_associations_hash.update(resource_key => operation.result)
@@ -99,6 +97,10 @@ module Bronze::Rails::Responders
         :errors      => []
       } # end options
     end # method options_for_valid_resource
+
+    def parent_redirect_path
+      resource_routing.parent_resources_path(*ancestors[0...-1])
+    end # method parent_redirect_path
 
     def redirect_to redirect_path, options = {}
       options.fetch(:messages, []).
@@ -121,6 +123,11 @@ module Bronze::Rails::Responders
       ) # end render
     end # method render_template
 
+    def resource_templates
+      @resource_templates ||=
+        Bronze::Rails::Resources::ResourceTemplates.new(@resource_definition)
+    end # method resource_templates
+
     def respond_to_create_failure operation
       options =
         options_for_invalid_resource(operation).
@@ -132,7 +139,7 @@ module Bronze::Rails::Responders
           :messages => { :warning => build_message(:create, :failure) }
         ) # end update
 
-      render_template @resource_definition.new_template, options
+      render_template resource_templates.new_template, options
     end # method respond_to_create_failure
 
     def respond_to_create_success operation
@@ -169,19 +176,12 @@ module Bronze::Rails::Responders
           } # end locals
         ) # end update
 
-      render_template @resource_definition.edit_template, options
+      render_template resource_templates.edit_template, options
     end # method respond_to_edit_success
 
     def respond_to_index_failure _operation
-      parent        = @resource_definition.parent_resources.last
-      redirect_path =
-        if parent
-          parent.resources_path(*ancestors[0...-1])
-        else
-          Bronze::Rails::Services::RoutesService.instance.root_path
-        end # if-else
-
-      messages = { :warning => build_message(:index, :failure) }
+      redirect_path = parent_redirect_path
+      messages      = { :warning => build_message(:index, :failure) }
 
       redirect_to(redirect_path, :messages => messages)
     end # method respond_to_index_failure
@@ -190,7 +190,7 @@ module Bronze::Rails::Responders
       options =
         { :resources => build_resources_hash(operation, :many => true) }
 
-      render_template @resource_definition.index_template, options
+      render_template resource_templates.index_template, options
     end # method respond_to_index_success
 
     def respond_to_new_failure _operation
@@ -209,7 +209,7 @@ module Bronze::Rails::Responders
           } # end locals
         ) # end update
 
-      render_template @resource_definition.new_template, options
+      render_template resource_templates.new_template, options
     end # method respond_to_new_success
 
     def respond_to_not_found _operation
@@ -227,7 +227,7 @@ module Bronze::Rails::Responders
     def respond_to_show_success operation
       options = { :resources => build_resources_hash(operation) }
 
-      render_template @resource_definition.show_template, options
+      render_template resource_templates.show_template, options
     end # method respond_to_show_success
 
     def respond_to_update_failure operation
@@ -241,7 +241,7 @@ module Bronze::Rails::Responders
           :messages => { :warning => build_message(:update, :failure) }
         ) # end update
 
-      render_template @resource_definition.edit_template, options
+      render_template resource_templates.edit_template, options
     end # method respond_to_update_failure
 
     def respond_to_update_success operation
@@ -251,12 +251,10 @@ module Bronze::Rails::Responders
     end # method respond_to_update_success
 
     def set_flash key, message, now: false
-      flash    = render_context.flash
-      flash    = flash.now if now
+      flash = render_context.flash
+      flash = flash.now if now
 
       (flash[key] ||= []) << message
     end # method set_flash
   end # class
-
-  # rubocop:enable Metrics/ClassLength
 end # module
