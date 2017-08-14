@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-require 'bronze/rails/resources/resource/routing'
+require 'bronze/rails/resources/resource_routing'
 require 'bronze/rails/responders/render_view_responder'
 require 'bronze/rails/responders/responder_examples'
 
@@ -18,7 +18,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
     Bronze::Rails::Resources::Resource.new resource_class, resource_options
   end # let
   let(:resource_routing) do
-    Bronze::Rails::Resources::Resource::Routing.new(resource_definition)
+    Bronze::Rails::Resources::ResourceRouting.new(resource_definition)
   end # let
   let(:resources)        { {} }
   let(:instance_options) { { :resources => resources } }
@@ -419,7 +419,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
       wrap_context 'when the resource has a parent resource' do
         let(:parent) { resource_definition.parent_resources.last }
         let(:parent_routing) do
-          Bronze::Rails::Resources::Resource::Routing.new(parent)
+          Bronze::Rails::Resources::ResourceRouting.new(parent)
         end # let
 
         include_examples 'should redirect to',
@@ -432,7 +432,7 @@ RSpec.describe Bronze::Rails::Responders::RenderViewResponder do
         let(:parent)    { resource_definition.parent_resources.last }
         let(:resources) { { :book => book } }
         let(:parent_routing) do
-          Bronze::Rails::Resources::Resource::Routing.new(parent)
+          Bronze::Rails::Resources::ResourceRouting.new(parent)
         end # let
 
         include_examples 'should redirect to',

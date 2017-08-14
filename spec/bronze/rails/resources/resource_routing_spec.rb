@@ -1,15 +1,15 @@
-# spec/bronze/rails/resources/resource/routing_spec.rb
+# spec/bronze/rails/resources/resource_routing_spec.rb
 
 require 'rails_helper'
 
 require 'bronze/rails/resources/resource'
-require 'bronze/rails/resources/resource/routing'
+require 'bronze/rails/resources/resource_routing'
 
 require 'fixtures/entities/book'
 require 'fixtures/entities/chapter'
 require 'fixtures/entities/section'
 
-RSpec.describe Bronze::Rails::Resources::Resource::Routing do
+RSpec.describe Bronze::Rails::Resources::ResourceRouting do
   shared_context 'when the resource has many namespaces' do
     let(:resource_block) do
       lambda do

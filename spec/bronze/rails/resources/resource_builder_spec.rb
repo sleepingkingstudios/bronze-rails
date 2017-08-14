@@ -1,15 +1,15 @@
-# spec/bronze/rails/resources/resource/builder_spec.rb
+# spec/bronze/rails/resources/resource_builder_spec.rb
 
 require 'rails_helper'
 
 require 'bronze/rails/resources/resource'
-require 'bronze/rails/resources/resource/builder'
+require 'bronze/rails/resources/resource_builder'
 
 require 'fixtures/entities/book'
 require 'fixtures/entities/chapter'
 require 'fixtures/entities/section'
 
-RSpec.describe Bronze::Rails::Resources::Resource::Builder do
+RSpec.describe Bronze::Rails::Resources::ResourceBuilder do
   shared_context 'when the resource has many namespaces' do
     before(:example) do
       instance.namespace :admin

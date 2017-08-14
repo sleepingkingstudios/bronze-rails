@@ -7,7 +7,7 @@ require 'bronze/operations/identity_operation'
 require 'bronze/operations/null_operation'
 
 require 'bronze/rails/resources/resource'
-require 'bronze/rails/resources/resource_strategy'
+require 'bronze/rails/resources/operation_strategy'
 require 'bronze/rails/responders/render_view_responder'
 
 # rubocop:disable Metrics/ModuleLength
@@ -280,7 +280,7 @@ module Bronze::Rails::Resources
       resource_definition ||= self.resource_definition
       resource_class        = resource_definition&.resource_class
 
-      Bronze::Rails::Resources::ResourceStrategy.for(resource_class)
+      Bronze::Rails::Resources::OperationStrategy.for(resource_class)
     end # method operation_builder
 
     def permitted_attributes

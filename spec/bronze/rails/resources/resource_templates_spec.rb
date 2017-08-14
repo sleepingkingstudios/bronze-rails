@@ -1,15 +1,15 @@
-# spec/bronze/rails/resources/resource/templates_spec.rb
+# spec/bronze/rails/resources/resource_templates_spec.rb
 
 require 'rails_helper'
 
 require 'bronze/rails/resources/resource'
-require 'bronze/rails/resources/resource/templates'
+require 'bronze/rails/resources/resource_templates'
 
 require 'fixtures/entities/book'
 require 'fixtures/entities/chapter'
 require 'fixtures/entities/section'
 
-RSpec.describe Bronze::Rails::Resources::Resource::Templates do
+RSpec.describe Bronze::Rails::Resources::ResourceTemplates do
   shared_context 'when the resource has many namespaces' do
     let(:resource_block) do
       lambda do

@@ -1,6 +1,6 @@
 # lib/bronze/rails/responders/render_view_responder.rb
 
-require 'bronze/rails/resources/resource/templates'
+require 'bronze/rails/resources/resource_templates'
 require 'bronze/rails/responders/errors'
 require 'bronze/rails/responders/messages'
 require 'bronze/rails/responders/responder'
@@ -125,7 +125,7 @@ module Bronze::Rails::Responders
 
     def resource_templates
       @resource_templates ||=
-        Bronze::Rails::Resources::Resource::Templates.new(@resource_definition)
+        Bronze::Rails::Resources::ResourceTemplates.new(@resource_definition)
     end # method resource_templates
 
     def respond_to_create_failure operation

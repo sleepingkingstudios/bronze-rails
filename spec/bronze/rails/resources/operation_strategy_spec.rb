@@ -1,11 +1,11 @@
-# spec/bronze/rails/resources/resource_strategy_spec.rb
+# spec/bronze/rails/resources/operation_strategy_spec.rb
 
 require 'bronze/entities/entity'
 require 'bronze/entities/operations/entity_operation_builder'
 
-require 'bronze/rails/resources/resource_strategy'
+require 'bronze/rails/resources/operation_strategy'
 
-RSpec.describe Bronze::Rails::Resources::ResourceStrategy do
+RSpec.describe Bronze::Rails::Resources::OperationStrategy do
   describe '::for' do
     it { expect(described_class).to respond_to(:for).with(1).argument }
 

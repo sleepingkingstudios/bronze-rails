@@ -3,7 +3,7 @@
 require 'sleeping_king_studios/tools/toolbelt'
 
 require 'bronze/rails/resources'
-require 'bronze/rails/resources/resource/builder'
+require 'bronze/rails/resources/resource_builder'
 
 module Bronze::Rails::Resources
   # Object representing a Rails resource. Provides methods to query properties
@@ -19,7 +19,7 @@ module Bronze::Rails::Resources
 
       return unless block
 
-      builder = Bronze::Rails::Resources::Resource::Builder.new(self)
+      builder = Bronze::Rails::Resources::ResourceBuilder.new(self)
       builder.instance_exec(&block) if block
     end # constructor
 

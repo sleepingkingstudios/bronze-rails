@@ -2,7 +2,7 @@
 
 require 'sleeping_king_studios/tools/toolbelt'
 
-require 'bronze/rails/resources/resource/routing'
+require 'bronze/rails/resources/resource_routing'
 require 'bronze/rails/responders'
 
 module Bronze::Rails::Responders
@@ -45,7 +45,7 @@ module Bronze::Rails::Responders
 
     def resource_routing
       @resource_routing ||=
-        Bronze::Rails::Resources::Resource::Routing.new(@resource_definition)
+        Bronze::Rails::Resources::ResourceRouting.new(@resource_definition)
     end # method resource_routing
 
     def tools
