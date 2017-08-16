@@ -101,14 +101,12 @@ module Bronze::Rails::Resources
     def create_resource
       operation_builder.
         build_and_insert_one(repository).
-        else { |op| map_errors(op) }.
         execute(resource_params)
     end # method create_resource
 
     def destroy_resource
       operation_builder.
         delete_one(repository).
-        else { |op| map_errors(op) }.
         execute(primary_resource)
     end # method destroy_resource
 
@@ -140,7 +138,6 @@ module Bronze::Rails::Resources
     def update_resource
       operation_builder.
         assign_and_update_one(repository).
-        else { |op| map_errors(op) }.
         execute(primary_resource, resource_params)
     end # method update_resource
 
@@ -246,29 +243,6 @@ module Bronze::Rails::Resources
 
       filter
     end # method filter_params
-    # rubocop:enable Metrics/AbcSize
-    # rubocop:enable Metrics/MethodLength
-
-    # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/MethodLength
-    def map_errors operation
-      return operation unless operation.errors && !operation.errors.empty?
-      return operation unless resource_definition.serialization_key_changed?
-
-      default_key = resource_definition.default_singular_resource_key
-      if operation.errors.key?(default_key)
-        operation.errors[resource_definition.singular_serialization_key] =
-          operation.errors.delete(default_key)
-      end # if
-
-      default_key = resource_definition.default_plural_resource_key
-      if operation.errors.key?(default_key)
-        operation.errors[resource_definition.plural_serialization_key] =
-          operation.errors.delete(default_key)
-      end # if
-
-      operation
-    end # method map_error
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
 
