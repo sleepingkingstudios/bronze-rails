@@ -420,7 +420,7 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
       operation  = instance.send(:destroy_resource)
       repository = instance.send(:repository)
 
-      expect(operation).to be_a Bronze::Operations::OperationChain
+      expect(operation).to be_a Bronze::Entities::Operations::DeleteOneOperation
       expect(operation.called?).to be true
       expect(operation.success?).to be true
 
@@ -438,7 +438,8 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
       it 'should fail with errors' do
         operation = instance.send(:destroy_resource)
 
-        expect(operation).to be_a Bronze::Operations::OperationChain
+        expect(operation).
+          to be_a Bronze::Entities::Operations::DeleteOneOperation
         expect(operation.called?).to be true
         expect(operation.success?).to be false
 
@@ -451,11 +452,12 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         it 'should fail with errors' do
           operation = instance.send(:destroy_resource)
 
-          expect(operation).to be_a Bronze::Operations::OperationChain
+          expect(operation).
+            to be_a Bronze::Entities::Operations::DeleteOneOperation
           expect(operation.called?).to be true
           expect(operation.success?).to be false
 
-          expect(operation.errors[:tome]).not_to be_empty
+          expect(operation.errors[:book]).not_to be_empty
         end # it
       end # context
     end # context
@@ -1074,109 +1076,6 @@ RSpec.describe Bronze::Rails::Resources::ResourcesController do
         it { expect(instance.send :filter_params).to be == expected }
       end # describe
     end # wrap_context
-  end # describe
-
-  describe '#map_errors' do
-    include_context 'when the resource is defined'
-
-    shared_examples 'should map the errors' do
-      before(:example) do
-        allow(operation).to receive(:result).and_return(result)
-      end # before example
-
-      it 'should map the errors' do
-        expect(mapped).to be_a Bronze::Operations::Operation
-
-        expect(mapped.called?).to be true
-        expect(mapped.result).to be result
-        expect(mapped.errors).to be == expected
-      end # it
-    end # shared_examples
-
-    let(:operation) { Bronze::Operations::NullOperation.new.execute }
-    let(:result)    { double('result') }
-    let(:mapped)    { instance.send :map_errors, operation }
-    let(:expected)  { Bronze::Errors.new }
-
-    it 'should define the private method' do
-      expect(instance).not_to respond_to(:map_errors)
-
-      expect(instance).to respond_to(:map_errors, true).with(1).argument
-    end # it
-
-    describe 'with an operation with no errors' do
-      include_examples 'should map the errors'
-    end # describe
-
-    describe 'with an operation with general errors' do
-      let(:expected) do
-        super().add('errors.libraries.card_expired')
-      end # let
-
-      before(:example) do
-        operation.errors.add('errors.libraries.card_expired')
-      end # before example
-
-      include_examples 'should map the errors'
-    end # describe
-
-    describe 'with an operation with resource errors' do
-      let(:expected) do
-        super().
-          add('errors.libraries.card_expired').
-          tap do |err|
-            err[:book].add('errors.books.cover_missing')
-            err[:book].add('errors.books.spine_bent')
-          end # tap
-      end # let
-
-      before(:example) do
-        operation.errors.add('errors.libraries.card_expired')
-        operation.errors[:book].add('errors.books.cover_missing')
-        operation.errors[:book].add('errors.books.spine_bent')
-      end # before example
-
-      include_examples 'should map the errors'
-    end # describe
-
-    context 'when the resource has a custom key' do
-      let(:resource_options) { super().merge :resource_name => 'tome' }
-
-      describe 'with an operation with no errors' do
-        include_examples 'should map the errors'
-      end # describe
-
-      describe 'with an operation with general errors' do
-        let(:expected) do
-          super().add('errors.libraries.card_expired')
-        end # let
-
-        before(:example) do
-          operation.errors.add('errors.libraries.card_expired')
-        end # before example
-
-        include_examples 'should map the errors'
-      end # describe
-
-      describe 'with an operation with resource errors' do
-        let(:expected) do
-          super().
-            add('errors.libraries.card_expired').
-            tap do |err|
-              err[:tome].add('errors.books.cover_missing')
-              err[:tome].add('errors.books.spine_bent')
-            end # tap
-        end # let
-
-        before(:example) do
-          operation.errors.add('errors.libraries.card_expired')
-          operation.errors[:book].add('errors.books.cover_missing')
-          operation.errors[:book].add('errors.books.spine_bent')
-        end # before example
-
-        include_examples 'should map the errors'
-      end # describe
-    end # context
   end # describe
 
   describe '#null_operation' do
